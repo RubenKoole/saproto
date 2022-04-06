@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property int $file_id
+ * @property int $thumb_file_id
  * @property int $album_id
  * @property int $date_taken
  * @property int $private
@@ -54,6 +55,12 @@ class Photo extends Model
 
     /** @return HasOne|StorageEntry */
     private function file()
+    {
+        return $this->hasOne('Proto\Models\StorageEntry', 'id', 'file_id')->first();
+    }
+
+    /** @return HasOne|StorageEntry */
+    private function thumbnail()
     {
         return $this->hasOne('Proto\Models\StorageEntry', 'id', 'file_id')->first();
     }
