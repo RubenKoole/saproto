@@ -1,9 +1,10 @@
 // Vendors
-window.SignaturePad = require('signature_pad')
-window.moment = require('moment/moment')
-window.Quagga = require('quagga')
+global.SignaturePad = require('signature_pad')
+global.moment = require('moment/moment')
+global.Quagga = require('quagga')
 
 import './countdown-timer'
+import './utilities'
 import './broto'
 
 // Execute theme JavaScript
@@ -11,55 +12,8 @@ window[config.theme]?.()
 
 // Disable submit buttons after a form has been submitted so
 // spamming the button does not result in multiple requests
-window.addEventListener('load', _ => {
-    let formList = Array.from(document.getElementsByTagName("form"))
-    formList.forEach(form => {
-        form.addEventListener('submit', e => {
-            e.target.onsubmit = _ => false
-        }, { once: true })
-    })
-})
-
-// Find CSRF token in page meta tags
-const token = document.head.querySelector('meta[name="csrf-token"]')
-if (token === undefined) console.error("X-CSRF token could not be found!")
-
-// Global wrapper methods for the native fetch api
-const request = (method, url, params, options) => {
-    options.method = method
-    options.headers = options.headers ?? {}
-    if (method === 'GET') {
-        url += `?${(new URLSearchParams(params))}`
-    } else {
-        if(!(params instanceof FormData)){
-            options.headers["Content-Type"] = "application/json"
-            params = JSON.stringify(params)
-        }
-        options.body = params
-        options.headers["X-Requested-With"] = "XMLHttpRequest"
-        options.headers["X-CSRF-TOKEN"] = token.content
-        options.credentials = "same-origin"
-    }
-    const result = fetch(url, options)
-    return result.then(response => {
-        if (!response.ok || (options.parse !== undefined && options.parse === false)) return response
-        return response.json()
-    })
-}
-
-global.get = (url, params = {}, options = {}) => request('GET', url, params, options)
-global.post = (url, params = {}, options = {}) => request('POST', url, params, options)
-
-// Method to debounce function calls
-window.debounce = (callback, timeout = 300) => {
-    let timer
-    return (...args) => {
-        clearTimeout(timer)
-        timer = setTimeout(_ => {
-            callback.apply(this, args)
-        }, timeout)
-    }
-}
+let formList = Array.from(document.getElementsByTagName("form"))
+formList.forEach(form => form.addEventListener('submit', preventSubmitBounce, { once: true }))
 
 // Get online Discord users
 const discordOnlineCount = document.getElementById("discord__online")
@@ -96,13 +50,13 @@ if (customFileInputList.length) {
         el.addEventListener('change', _ => {
             let fileName = this.value.split('\\').pop()
             let label = this.nextElementSibling
-            label.classList.add( 'selected')
+            label.classList.add('selected')
             label.innerHTML = fileName
         })
     })
 }
 
-// Initialise Swiper
+// Enable Swiper with default settings
 import Swiper, { Autoplay, Navigation } from 'swiper'
 import 'swiper/css'
 import 'swiper/css/autoplay'
@@ -206,54 +160,45 @@ collapseList.map(el => {
 })
 
 // Enable search autocomplete fields
-import SearchComplete from './search-complete'
+import SearchField from './search-field'
 const userSearchList = Array.from(document.querySelectorAll('.user-search'))
-userSearchList.forEach(el => new SearchComplete(
-    el,
-    config.routes.api_search_user,
-    (option, item) => {
-        option.innerHTML = `#${item.id} ${item.name}`
-    },
-    item => { return item.name }
-))
+userSearchList.forEach(el => new SearchField(el, config.routes.api_search_user, {
+    optionTemplate: (el, item) => {
+        el.className = item.is_member ? '' : 'text-muted'
+        el.innerHTML = `#${item.id} ${item.name}`
+    }
+}))
 
 const eventSearchList = Array.from(document.querySelectorAll('.event-search'))
-eventSearchList.forEach(el => new SearchComplete(
-    el,
-    config.routes.api_search_event,
-    (option, item) => {
-        option.className = item.is_future ? '' : 'text-muted'
-        option.innerHTML = `${item.title} (${item.formatted_date.simple})`
+eventSearchList.forEach(el => new SearchField(el, config.routes.api_search_event, {
+    optionTemplate: (el, item) => {
+        el.className = item.is_future ? '' : 'text-muted'
+        el.innerHTML = `${item.title} (${item.formatted_date.simple})`
     },
-    item => { return item.title },
-    (a, b) => {
+    selectedTemplate: item => item.title,
+    sorter: (a, b) => {
         if (a.start < b.start) return 1
         else if (a.start > b.start) return -1
         else return 0
     }
-))
+}))
 
 const productSearchList = Array.from(document.querySelectorAll('.product-search'))
-productSearchList.forEach(el => new SearchComplete(
-    el,
-    config.routes.api_search_product,
-    (option, item) => {
-        option.className = item.is_visible ? '' : 'text-muted'
-        option.innerHTML = `${item.name} (€${item.price.toFixed(2)}; ${item.stock} in stock)`
+productSearchList.forEach(el => new SearchField(el, config.routes.api_search_product, {
+    optionTemplate: (el, item) => {
+        el.className = item.is_visible ? '' : 'text-muted'
+        el.innerHTML = `${item.name} (€${item.price.toFixed(2)}; ${item.stock} in stock)`
     },
-    item => { return item.name + (el.multiple ? ' (€' + item.price.toFixed(2) + ')' : '') },
-    (a, b) => {
+    selectedTemplate: item => item.name + (el.multiple ? ` (€${item.price.toFixed(2)})` : ''),
+    sorter: (a, b) => {
         if (a.is_visible === 0 && b.is_visible === 1) return 1
         else if (a.is_visible === 1 && b.is_visible === 0) return -1
         else return 0
     }
-))
+}))
 
 const committeeSearchList = Array.from(document.querySelectorAll('.committee-search'))
-committeeSearchList.forEach(el => new SearchComplete(
-    el,
-    config.routes.api_search_committee,
-))
+committeeSearchList.forEach(el => new SearchField(el, config.routes.api_search_committee))
 
 // Matomo Analytics
 const _paq = _paq || [];

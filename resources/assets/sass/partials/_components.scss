@@ -298,7 +298,7 @@ $photo-hover-gradient: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 
   appearance: none;
   height: 14px;
   width: 14px;
-  background-image: url("/images/inputs/fa-x.svg");
+  background-image: url("/images/font-awesome/fa-x.svg");
   background-size: 14px 14px;
 }
 
@@ -307,8 +307,8 @@ $photo-hover-gradient: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 
   background-image: unset;
   background-color: $dark;
   height: 15px;
-  mask: url("/images/inputs/fa-calendar.svg") no-repeat;
-  -webkit-mask: url("/images/inputs/fa-calendar.svg") no-repeat;
+  mask: url("/images/font-awesome/fa-calendar.svg") no-repeat;
+  -webkit-mask: url("/images/font-awesome/fa-calendar.svg") no-repeat;
   &:hover {
     cursor: pointer
   }
@@ -382,26 +382,41 @@ a.badge {
 .form-group.autocomplete {
   position: relative;
 
-  .user-search, .event-search, .product-search, .committee-search {
-    & ~ .selected-items > .selected-item {
-      &:before {
-        content: '⨯';
-        margin-right: 3px;
-      }
+  .search-field {
+    & ~ .selected-items {
+      @extend .form-control;
+      padding: $spacer * .25;
+      display: none;
+      border-top: 0;
 
-      &:hover {
+      .selected-item {
+        @extend .badge;
+        padding-left: $spacer * .25;
+        margin: $spacer * .5 $spacer * .25;
+        background-color: $success;
+        display: inline-block;
+
         &:before {
-          color: $danger;
+          content: '⨯';
+          margin-right: 3px;
         }
 
-        cursor: pointer;
-        background-color: mix($white, $success, 10%) !important;
+        &:hover {
+          &:before {
+            color: $danger;
+          }
+
+          cursor: pointer;
+          background-color: mix($white, $success, 10%) !important;
+        }
       }
     }
 
     & ~ .search-results {
+      @extend .form-control;
       display: none;
       z-index: 1;
+      padding: 0;
       position: absolute;
       max-height: 200px;
       max-width: calc(100vw - 20px);
@@ -706,9 +721,14 @@ ul.pagination {
     top: -20px;
   }
 
+  #cart-overflow {
+    @extend .cart-product;
+    z-index: 2;
+  }
+
   .cart-product {
-    position: relative;
-    float: left;
+    position: absolute;
+    transition: left 500ms;
     width: 90px;
     height: 90px;
     margin-top: 10px;
@@ -738,19 +758,15 @@ ul.pagination {
 
     &-count {
       position: absolute;
-
-      right: -10px;
-      bottom: -10px;
-
+      min-width: 45px;
+      height: 45px;
+      right: -15px;
+      bottom: -15px;
       padding: 10px;
-
       font-weight: bold;
-
-      color: #333;
-
-      box-shadow: 0 0 20px -5px #000;
-
-      background-color: #26ADE4;
+      color: $white;
+      text-align: center;
+      background-color: darken($omnomcom, 10%);
     }
   }
 
@@ -760,7 +776,7 @@ ul.pagination {
       transform: translate(0, 0);
       opacity: 1;
 
-      &.inactive {
+      &:disabled {
         transform: translate(200px, 0);
         opacity: 0;
       }
