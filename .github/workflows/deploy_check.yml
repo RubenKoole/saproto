@@ -1,8 +1,8 @@
-name: 🚀 Deploy
+name: ⚙ Deploy Check
 
 on:
   push:
-    branches:
+    branches-ignore:
       - master
 
 concurrency:
@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy
+    name: Deploy Check
     runs-on: ubuntu-latest
     env:
       PHP_VERSION: 7.3
@@ -58,7 +58,7 @@ jobs:
 
       - name: 🗑️ Remove storage directory
         run: rm -rf storage
-        
+
       - name: 📝 Create Sentry release
         uses: getsentry/action-release@v1
         env:
@@ -67,25 +67,3 @@ jobs:
           SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
         with:
           environment: production
-        
-      - name: 📁 Create build directory
-        run: mkdir ${{ env.BUILD_ARTIFACT_STAGING_DIR }}
-          
-      - name: 🗄️ ZIP Build
-        uses: TheDoctor0/zip-release@0.6.1
-        with:
-          filename: ${{ env.BUILD_ARTIFACT_STAGING_DIR }}build.zip
-          path: ${{ env.BUILD_SOURCE_DIR }}
-          exclusions: 'storage/* build/*'
-
-      - name: ➗ Calculate checksum
-        run: openssl md5 ${{ env.BUILD_ARTIFACT_STAGING_DIR }}build.zip | cut -d" " -f2 > ${{ env.BUILD_ARTIFACT_STAGING_DIR }}checksum.txt
-
-      - name: 📂 Sync files
-        uses: SamKirkland/FTP-Deploy-Action@4.1.0
-        with:
-          server: ${{ env.HOST_SERVER }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ${{ env.BUILD_ARTIFACT_STAGING_DIR }}
-          server-dir: ${{ env.BUILD_ARTIFACT_DESTINATION_DIR }}
