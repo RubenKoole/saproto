@@ -74,6 +74,11 @@ class OmNomController extends Controller
         }
 
         $store = config('omnomcom.stores')[$request->store];
+
+        if (! in_array($request->ip(), $store->addresses) && (! Auth::check() || ! Auth::user()->hasAnyPermission($store->roles))) {
+            abort(403);
+        }
+
         $categories = $this->getCategories($store);
 
         $products = [];
@@ -106,7 +111,7 @@ class OmNomController extends Controller
 
         if (array_key_exists($store_slug, $stores)) {
             $store = $stores[$store_slug];
-            if (! in_array($request->ip(), $store->addresses) && ! Auth::user()->can($store->roles)) {
+            if (! in_array($request->ip(), $store->addresses) && ! Auth::user()->hasAnyPermission($store->roles)) {
                 $result->message = 'You are not authorized to do this.';
             }
         } else {
@@ -223,7 +228,9 @@ class OmNomController extends Controller
                 $result->message .= sprintf('bought a total of <strong>%s calories</strong>', Orderline::where('orderlines.user_id', $user->id)->where('orderlines.created_at', 'LIKE', sprintf('%s %%', date('Y-m-d')))->join('products', 'products.id', '=', 'orderlines.product_id')->sum(DB::raw('orderlines.units * products.calories')));
             }
 
-            $result->message .= sprintf(' today, %s.', $user->calling_name);
+            if(strlen($result->message) > 0) {
+                $result->message .= sprintf(' today, %s.', $user->calling_name);
+            }
         }
 
         return json_encode($result);

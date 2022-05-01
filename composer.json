@@ -60,7 +60,7 @@
     "league/commonmark": "1.5.*",
     "league/oauth1-client": "1.7.*",
     "lisennk/laravel-slack-web-api": "0.1.*",
-    "milon/barcode": "^7.0",
+    "milon/barcode": "7.*",
     "mollie/laravel-mollie": "2.15.0",
     "nesbot/carbon": "2.*",
     "nickurt/laravel-pwned-passwords": "1.*",
