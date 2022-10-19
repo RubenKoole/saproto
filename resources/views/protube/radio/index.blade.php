@@ -41,7 +41,7 @@
                             <div class="col-4">
                                 <label>&nbsp;</label>
                                 <button type="submit" class="btn btn-success btn-block">
-                                    <i class="fas fa-save mr-2" aria-hidden="true"></i> Save
+                                    <i class="fas fa-save me-2" aria-hidden="true"></i> Save
                                 </button>
                             </div>
 
@@ -51,6 +51,7 @@
 
                 </div>
 
+                <div class="table-responsive">
                 <table class="table table-hover">
 
                     <thead>
@@ -94,6 +95,7 @@
                     </tbody>
 
                 </table>
+                </div>
 
             </div>
 
@@ -103,9 +105,7 @@
 
 @endsection
 
-@section('javascript')
-
-    @parent
+@push('javascript')
 
     <script type="text/javascript">
 
@@ -129,4 +129,4 @@
 
     </script>
 
-@endsection
+@endpush

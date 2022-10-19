@@ -1,4 +1,4 @@
-<div class="card mb-3 h-100">
+<div class="goodidea card mb-3 h-100">
 
     <div class="card-header bg-dark text-white">
 

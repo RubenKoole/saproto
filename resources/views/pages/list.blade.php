@@ -14,7 +14,7 @@
 
                 <div class="card-header bg-dark text-white">
                     @yield('page-title')
-                    <a href="{{ route('page::add') }}" class="badge badge-info float-right">
+                    <a href="{{ route('page::add') }}" class="badge bg-info float-end">
                         Create a new page.
                     </a>
                 </div>
@@ -43,12 +43,16 @@
                             <td>@if($page->is_member_only) <i class="fas fa-lock"></i> @endif</td>
                             <td>
                                 <a href="{{ route('page::edit', ['id' => $page->id]) }}">
-                                    <i class="fas fa-edit mr-2"></i>
+                                    <i class="fas fa-edit me-2"></i>
                                 </a>
 
-                                <a href="{{ route('page::delete', ['id' => $page->id]) }}" onclick="return confirm('Are you sure?')">
-                                    <i class="fas fa-trash text-danger"></i>
-                                </a>
+                                @include('website.layouts.macros.confirm-modal', [
+                                   'action' => route('page::delete', ['id' => $page->id]),
+                                   'text' => '<i class="fas fa-trash text-danger"></i>',
+                                   'title' => 'Confirm Delete',
+                                   'message' => 'Are you sure you want to delete this page?',
+                                   'confirm' => 'Delete',
+                                ])
                             </td>
 
                         </tr>

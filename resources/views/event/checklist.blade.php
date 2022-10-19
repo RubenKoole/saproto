@@ -18,7 +18,7 @@
 
                 <div class="card-body">
 
-                    <table width="100%" class="table table-bordered">
+                    <table class="table table-responsive">
 
                         <thead>
 
@@ -38,52 +38,54 @@
 
                         <tbody>
 
-                        @foreach($event->activity->allUsersSorted() as $user)
+                        @foreach($event->allUsers() as $user)
+                            @php
+                                $participation = $user->pivot;
+                            @endphp
+
                             <tr>
-
                                 <td>
-                                    @php
-                                        $participation = $user->pivot;
-                                    @endphp
-                                    <a href="{{ route('event::togglepresence', ['id' => $participation->id]) }}"
-                                       class="badge badge-{{ $participation->is_present ? 'success' : 'danger' }}">
-                                        {{ $participation->is_present ? 'Present' : 'Absent' }}
-                                    </a>
-                                </td>
-
-                                <td>
-                                    @if($event->activity)
-                                        @php
-                                            $participation = $user->pivot;
-                                        @endphp
-                                        @if($participation->committees_activities_id !== null)
-                                            <span class="badge badge-success">helper</span>
-                                        @else
-                                            participant
-                                        @endif
+                                    @if($participation)
+                                        <span
+                                           class="cursor-pointer is_present badge bg-{{ $participation->is_present ? 'success' : 'danger' }}"
+                                           data-id="{{ $participation->id }}">
+                                            {{ $participation->is_present ? 'Present' : 'Absent' }}
+                                        </span>
                                     @endif
                                 </td>
 
                                 <td>
-                                    <strong>{{ $user->name }}</strong>
+                                    @if($participation)
+                                        @if($participation->committees_activities_id !== null)
+                                            <span class="badge bg-success">Helper</span>
+                                        @else
+                                            Participant
+                                        @endif
+                                    @else
+                                        Ticket
+                                    @endif
                                 </td>
+
+                                <td><strong>{{ $user->name }}</strong></td>
 
                                 <td>
                                     @if($user->age() >= 18)
 
-                                        <span class="badge badge-success">
-                            <i class="fas fa-check" aria-hidden="true"></i> 18+
-                        </span>
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check" aria-hidden="true"></i> 18+
+                                        </span>
                                     @else
-                                        <span class="badge badge-danger">
-                            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> 18-
-                        </span>
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> 18-
+                                        </span>
                                     @endif
                                 </td>
 
                                 @if ($event->shouldShowDietInfo())
                                     <td>
-                                        {!! Markdown::convertToHtml($user->diet) !!}
+                                        @if($user->hasDiet())
+                                            {!! Markdown::convertToHtml($user->diet) !!}
+                                        @endif
                                     </td>
                                 @endif
                             </tr>
@@ -103,3 +105,18 @@
     </div>
 
 @endsection
+
+@push('javascript')
+    <script type="text/javascript" nonce="{{ csp_nonce() }}">
+        document.querySelectorAll('.is_present').forEach(el => {
+            el.onclick = _ => {
+                get("{{ route('event::togglepresence', ['id' => 'id']) }}".replace("id", el.getAttribute('data-id')))
+                .then(_ => {
+                    el.classList.toggle('bg-success')
+                    el.classList.toggle('bg-danger')
+                    el.innerHTML = el.innerHTML === 'Present' ? 'Absent' : 'Present'
+                })
+            }
+        })
+    </script>
+@endpush

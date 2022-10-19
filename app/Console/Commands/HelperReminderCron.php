@@ -3,16 +3,13 @@
 namespace Proto\Console\Commands;
 
 use Illuminate\Console\Command;
-
+use Mail;
 use Proto\Mail\HelperReminder;
 use Proto\Models\Event;
 use Proto\Models\HelpingCommittee;
 
-use Mail;
-
 class HelperReminderCron extends Command
 {
-
     /**
      * The name and signature of the console command.
      *
@@ -42,7 +39,6 @@ class HelperReminderCron extends Command
      */
     public function handle()
     {
-
         $events = Event::where('start', '>', strtotime('+3 days'))->where('start', '<', strtotime('+4 days'))->get();
         if ($events->count() == 0) {
             $this->info('No events in three days. Exiting.');
@@ -50,32 +46,29 @@ class HelperReminderCron extends Command
         }
 
         foreach ($events as $event) {
-            $this->info(sprintf("Handling event %s.", $event->title));
-            if (!$event->activity) {
+            $this->info(sprintf('Handling event %s.', $event->title));
+            if (! $event->activity) {
                 $this->info('Event has no activity. Skipping');
                 continue;
             }
             $helping_committees = HelpingCommittee::where('activity_id', $event->activity->id)->get();
-            if ($helping_committees->count() == 0) {
+            if (count($helping_committees) == 0) {
                 $this->info('Event has no helping committees. Skipping');
                 continue;
             }
 
             foreach ($helping_committees as $helping_committee) {
-                if ($helping_committee->getHelpingCount() >= $helping_committee->amount) {
+                if ($helping_committee->helperCount() >= $helping_committee->amount) {
                     $this->info(sprintf('%s has enough helpers, skipping.', $helping_committee->committee->name));
                     continue;
-                } elseif (count($helping_committee->committee->getHelperReminderSubscribers()) == 0) {
+                }
+                if (count($helping_committee->committee->helperReminderSubscribers()) == 0) {
                     $this->info(sprintf('%s has no people subscribed to helper reminders, skipping.', $helping_committee->committee->name));
                     continue;
-                } else {
-                    $this->error(sprintf('Sending reminder e-mail for %s (%s/%s helping).', $helping_committee->committee->name, $helping_committee->getHelpingCount(), $helping_committee->amount));
-                    Mail::queue((new HelperReminder($helping_committee))->onQueue('medium'));
                 }
+                $this->error(sprintf('Sending reminder e-mail for %s (%s/%s helping).', $helping_committee->committee->name, $helping_committee->helperCount(), $helping_committee->amount));
+                Mail::queue((new HelperReminder($helping_committee))->onQueue('medium'));
             }
-
         }
-
     }
-
 }

@@ -2,47 +2,59 @@
 
 namespace Proto\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Proto\Models\CommitteeMembership;
-
-use Proto\Models\User;
-
 use Auth;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\View\View;
+use Proto\Models\ActivityParticipation;
+use Proto\Models\CommitteeMembership;
+use Proto\Models\OrderLine;
+use Proto\Models\User;
 
 class UserProfileController extends Controller
 {
-
     /**
-     * Display the profile for a specific user.
-     *
-     * @param  int $id
-     * @return \Illuminate\View\View
+     * @param string|null $id
+     * @return View
      */
     public function show($id = null)
     {
-        if ($id == null) {
-            $user = Auth::user();
-        } else {
-            $user = User::fromPublicId($id);
-        }
+        $user = $id == null ? Auth::user() : User::fromPublicId($id);
 
         if ($user == null) {
             abort(404);
         }
 
-        $pastCommittees = $this->getGroups($user, false);
-        $pastSocieties = $this->getGroups($user, true);
-
-        return view('users.profile.profile', ['user' => $user, 'pastcommittees' => $pastCommittees, 'pastsocieties' => $pastSocieties]);
+        $pastCommittees = $this->getPastMemberships($user, false);
+        $pastSocieties = $this->getPastMemberships($user, true);
+        $moneySpent = $this->getSpentMoney($user);
+        $totalProducts = $this->getProductsPurchased($user);
+        $totalSignups = $this->getTotalSignups($user);
+        return view('users.profile.profile', ['user' => $user, 'pastcommittees' => $pastCommittees, 'pastsocieties' => $pastSocieties, 'spentmoney'=>$moneySpent, 'signups'=>$totalSignups, 'totalproducts'=>$totalProducts]);
     }
 
-    private function getGroups($user, $getsocieties) {
-        return CommitteeMembership::withTrashed()
+    /**
+     * @param User $user
+     * @param bool $with_societies
+     * @return Collection|CommitteeMembership[]
+     */
+    private function getPastMemberships($user, $with_societies)
+    {
+        return CommitteeMembership::onlyTrashed()
             ->with('committee')
             ->where('user_id', $user->id)
-            ->whereNotIn('id', $user->committees->pluck('pivot.id'))
             ->get()
-            ->where('committee.is_society', $getsocieties);
+            ->where('committee.is_society', $with_societies);
     }
 
+    private function getSpentMoney($user) {
+        return OrderLine::where('user_id', $user->id)->pluck('total_price')->sum();
+    }
+
+    private function getProductsPurchased($user) {
+        return OrderLine::where('user_id', $user->id)->pluck('units')->sum();
+    }
+
+    private function getTotalSignups($user) {
+        return ActivityParticipation::where('user_id', $user->id)->count();
+    }
 }

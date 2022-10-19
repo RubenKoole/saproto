@@ -1,13 +1,13 @@
 @extends('website.layouts.redesign.dashboard')
 
 @section('page-title')
-    @if($new) Add new menu item @else Edit menu item @endif
+    {{ isset($item) ? 'Edit menu item' : 'Add new menu item' }}
 @endsection
 
 @section('container')
 
     <form method="post"
-          action="{{ ($new ? route("menu::add") : route("menu::edit", ['id' => $item->id])) }}"
+          action="{{ isset($item) ? route("menu::edit", ['id' => $item->id]) : route("menu::add") }}"
           enctype="multipart/form-data">
 
         {!! csrf_field() !!}
@@ -25,27 +25,29 @@
                     <div class="card-body">
 
                         <div class="form-group">
-                            <label for="menuname">Menu name:</label>
-                            <input type="text" class="form-control" id="menuname" name="menuname"
-                                   placeholder="About Proto" value="{{ $item->menuname or '' }}" required>
+                            <label for="name">Name:</label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                   placeholder="About Proto" value="{{ $item->menuname ?? '' }}" required>
                         </div>
 
                         <div class="form-group">
                             <label for="parent">Parent:</label>
                             <select class="form-control" name="parent" id="parent">
-                                <option @if($new || $item->parent == null) selected @endif value="0">No parent</option>
+                                <option {{ (!isset($item) || $item->parent == null) ? 'selected' : ''}} value>No parent</option>
                                 @foreach($topMenuItems as $topMenuItem)
-                                    <option @if(!$new && $topMenuItem->id == $item->parent) selected
-                                            @endif value="{{ $topMenuItem->id }}"
-                                            @if(!$new && $topMenuItem->id == $item->id) disabled @endif>{{ $topMenuItem->menuname }}</option>
+                                    <option value="{{ $topMenuItem->id }}"
+                                            {{ (isset($item) && $topMenuItem->id == $item->parent) ? 'selected' : '' }}
+                                            {{ (isset($item) && $topMenuItem->id == $item->id) ? 'disabled' : '' }}>
+                                        {{ $topMenuItem->menuname }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" name="is_member_only"
-                                       @if(isset($item->is_member_only) && $item->is_member_only) checked @endif>
+                        <div class="form-check my-2">
+                            <label class="form-check-label">
+                                <input class="form-check-input" type="checkbox" name="is_member_only"
+                                       {{ isset($item->is_member_only) && $item->is_member_only ? 'checked' : '' }}>
                                 <i class="fas fa-lock" aria-hidden="true"></i> Members only
                             </label>
                         </div>
@@ -53,54 +55,50 @@
                         <div class="form-group">
                             <label for="page_id">Target page:</label>
                             <select class="form-control" name="page_id" id="page_id">
-                                <option @if($new) selected @endif disabled>Select a page...</option>
+                                <option disabled {{ !isset($item) ?  'selected' : '' }}>Select a page...</option>
                                 <option disabled>---</option>
-                                <option @if(!$new && $item->pageId == null) selected @endif value="0">Other URL</option>
+                                <option id="other-url-option" {{ isset($item) && $item->page_id ? 'selected' : '' }} value>Other URL</option>
                                 <option disabled>---</option>
                                 @foreach($pages as $page)
-                                    <option @if(!$new && $page->id == $item->pageId) selected
-                                            @endif value="{{ $page->id }}">{{ $page->title }}</option>
+                                    <option {{ isset($item) && $page->id == $item->page_id ? 'selected' : '' }} value="{{ $page->id }}">
+                                        {{ $page->title }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <div class="form-group" @if($new || !$item->pageId == null) style="display: none;"
-                             @endif id="menu__otherUrl">
-                            <label for="url">Other URL:</label>
-                            <input type="text" class="form-control" id="url" name="url"
-                                   placeholder="http://www.proto.utwente.nl/" value="{{ $item->url or '' }}">
-                        </div>
+                        <div id="other-url-fields" class="{{ ! isset($item) || isset($item->page_id) ? 'd-none' : '' }}">
 
-                        <div class="form-group" @if($new || !$item->pageId == null) style="display: none;"
-                             @endif id="menu__otherUrlRoute">
-                            <label for="url">Existing Route:</label>
-                            <select class="form-control" id="route">
-                                <option disabled selected>Select a route...</option>
-                                @foreach($routes as $route)
-                                    @if (
-                                        $route->getName() &&
-                                        strpos($route->uri(), '{') === false &&
-                                        strpos(implode("|",$route->methods()), 'GET') >= 0
-                                    )
-                                        <?php
-                                        $url = 'https://' .
-                                            ($route->domain() == null ? config('app-proto.primary-domain') : $route->domain()) .
-                                            '/' .
-                                            ($route->uri() == '/' ? '' : $route->uri());
-                                        ?>
-                                        <option value="{{ $route->getName() }}">
-                                            {{ $url }}
+                            <div class="form-group">
+                                <label for="url">Other URL:</label>
+                                <input type="text" class="form-control" id="url" name="url"
+                                       placeholder="http://www.proto.utwente.nl/" value="{{ $item->url ?? '' }}">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="route">Existing Route:</label>
+                                <select class="form-control" id="route">
+                                    <option disabled {{ !isset($item) || $item->url == null ? 'selected' : '' }}>Select a route...</option>
+                                    @foreach($routes as $route)
+                                        @php
+                                            $domain = $route->domain() == null ? config('app-proto.primary-domain') : $route->domain();
+                                            $uri = $route->uri() == '/' ? '' : $route->uri();
+                                            $url = "https://$domain/$uri";
+                                        @endphp
+                                        <option value="{{ $url }}" {{ isset($item) && $item->url == '(route) '.$route->getName() ? 'selected' : '' }}>
+                                            [{{ $route->getName() }}] -> {{ $route->domain() }}/{{ $route->uri }}
                                         </option>
-                                    @endif
-                                @endforeach
-                            </select>
+                                    @endforeach
+                                </select>
+                            </div>
+
                         </div>
 
                     </div>
 
                     <div class="card-footer">
 
-                        <button type="submit" class="btn btn-success float-right">Submit</button>
+                        <button type="submit" class="btn btn-success float-end">Submit</button>
 
                         <a href="{{ route("menu::list") }}" class="btn btn-default">Cancel</a>
 
@@ -116,24 +114,17 @@
 
 @endsection
 
-@section('javascript')
+@push('javascript')
+    <script type="text/javascript" nonce="{{ csp_nonce() }}">
+        const otherUrlOption = document.getElementById('other-url-option')
+        const otherUrlFields = document.getElementById('other-url-fields')
+        document.getElementById('page_id').addEventListener('change', e => {
+            if (otherUrlOption.selected) otherUrlFields.classList.remove('d-none')
+            else otherUrlFields.classList.add('d-none')
+        })
 
-    @parent
-
-    <script>
-        $("#page_id").change(function () {
-            if ($(this).val() == 0) {
-                $("#menu__otherUrl").show(0);
-                $("#menu__otherUrlRoute").show(0);
-            } else {
-                $("#menu__otherUrl").hide(0);
-                $("#menu__otherUrlRoute").hide(0);
-            }
-        });
-
-        $("#route").change(function () {
-            $("#url").val("(route) " + $(this).val());
-        });
+        document.getElementById('route').addEventListener('change', e => {
+            document.getElementById('url').value = e.target.value
+        })
     </script>
-
-@endsection
+@endpush

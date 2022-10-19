@@ -4,11 +4,13 @@
 
     @include('website.navigation.navbar')
 
-    <div style="width: 100%; height: 71px;">&nbsp;</div>
+    <div class="w-100" style="height: 71px;">&nbsp;</div>
 
     <main role="main" class="container-fluid">
 
         @include('website.announcements')
+
+        @include('website.errors')
 
         @yield('container')
 

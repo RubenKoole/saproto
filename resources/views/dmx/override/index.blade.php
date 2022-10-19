@@ -14,13 +14,14 @@
 
                 <div class="card-header bg-dark text-white">
                     @yield('page-title')
-                    <a href="{{ route('dmx::override::add') }}" class="badge badge-info float-right">
+                    <a href="{{ route('dmx::override::add') }}" class="badge bg-info float-end">
                         Create a new override.
                     </a>
                 </div>
 
                 @if (count($overrides) > 0)
 
+                    <div class="table-responsive">
                     <table class="table table-hover">
 
                         <thead>
@@ -76,6 +77,7 @@
                         @endforeach
 
                     </table>
+                    </div>
 
                 @else
 

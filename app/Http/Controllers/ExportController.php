@@ -2,27 +2,35 @@
 
 namespace Proto\Http\Controllers;
 
-use Proto\Models\EmailList;
-use Proto\Models\Event;
+use Permission;
 use Proto\Models\Account;
 use Proto\Models\Achievement;
 use Proto\Models\Activity;
 use Proto\Models\Committee;
+use Proto\Models\Company;
+use Proto\Models\EmailList;
+use Proto\Models\Event;
 use Proto\Models\HelpingCommittee;
-use Proto\Models\Permission;
+use Proto\Models\MenuItem;
+use Proto\Models\Page;
 use Proto\Models\Product;
 use Proto\Models\ProductCategory;
 use Proto\Models\ProductCategoryEntry;
-use Proto\Models\Role;
 use Proto\Models\Ticket;
 use Proto\Models\User;
+use Role;
 
 class ExportController extends Controller
 {
+    /**
+     * @param array $table
+     * @param string $personal_key
+     * @return mixed
+     */
     public function export($table, $personal_key)
     {
         $user = User::where('personal_key', $personal_key)->first();
-        if (!$user || !$user->is_member || !$user->signed_nda) {
+        if (! $user || ! $user->is_member || ! $user->signed_nda) {
             abort(403, 'You do not have access to this data. You need a membership of a relevant committee to access it.');
         }
         $data = null;
@@ -58,6 +66,9 @@ class ExportController extends Controller
             case 'committees_activities':
                 $data = HelpingCommittee::all();
                 break;
+            case 'companies':
+                $data = Company::all();
+                break;
             case 'events':
                 if ($user->can('admin')) {
                     $data = Event::all();
@@ -67,6 +78,12 @@ class ExportController extends Controller
                 break;
             case 'mailinglists':
                 $data = EmailList::all();
+                break;
+            case 'menuitems':
+                $data = MenuItem::all();
+                break;
+            case 'pages':
+                $data = Page::all();
                 break;
             case 'permissions':
                 $data = Permission::all();
@@ -87,6 +104,7 @@ class ExportController extends Controller
                 $data = Ticket::all();
                 break;
         }
+
         return $data;
     }
 }

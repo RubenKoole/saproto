@@ -1,6 +1,6 @@
 <div class="card mb-3">
 
-    <div class="card-header pb-0" style="overflow-x: auto;">
+    <div class="card-header pb-0 overflow-auto">
         {{ $data->links() }}
     </div>
 
@@ -28,4 +28,9 @@
 
     </div>
 
+    @if(count($data)>10)
+    <div class="card-header pb-0 overflow-auto">
+        {{ $data->links() }}
+    </div>
+    @endif
 </div>

@@ -29,17 +29,3 @@
     </div>
 
 @endsection
-
-@section('stylesheet')
-
-    @parent
-
-    <style type="text/css">
-
-        .committee__hidden {
-            opacity: 0.5;
-        }
-
-    </style>
-
-@endsection

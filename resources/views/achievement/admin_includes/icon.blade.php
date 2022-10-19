@@ -3,8 +3,6 @@
 
     {!! csrf_field() !!}
 
-    <input type="hidden" name="fa_icon" id="icon">
-
     <div class="card mb-3">
 
         <div class="card-header bg-dark text-white">
@@ -13,14 +11,11 @@
 
         <div class="card-body">
 
-            <div class="form-group">
-                <label data-placement="inline" class="icp icp-auto"
-                       data-selected="{{  substr($achievement->fa_icon, 3) }}"></label>
-            </div>
-
-        </div>
-
-        <div class="card-footer">
+            @include('website.layouts.macros.iconpicker', [
+                'name' => 'fa_icon',
+                'placeholder' => isset($achievement) ? $achievement->fa_icon : null,
+                'label' => 'Achievement icon:'
+            ])
 
             <button type="submit" class="btn btn-success btn-block">
                 Save icon
@@ -31,18 +26,3 @@
     </div>
 
 </form>
-
-
-
-@section('javascript')
-
-    @parent
-
-    <script>
-        $('.icp-auto').iconpicker();
-        $('.icp').on('iconpickerSelected', function (e) {
-            $('#icon').val(e.iconpickerInstance.options.fullClassFormatter(e.iconpickerValue));
-        });
-    </script>
-
-@endsection

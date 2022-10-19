@@ -107,7 +107,7 @@
     </style>
 
     <!-- Matomo -->
-    <script type="text/javascript">
+    <script type="text/javascript" nonce="{{ csp_nonce() }}">
         var _paq = _paq || [];
         /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
         _paq.push(['trackPageView']);
@@ -137,10 +137,10 @@
         <div class="box-header">
             The SmartXp is currently
 
-            @if($answer)
-                <span class="green">not occupied!</span>
+            @if($occupied)
+                <span class="text-danger">occupied.</span>
             @else
-                <span style="color: red;">occupied.</span>
+                <span class="text-primary">not occupied!</span>
             @endif
 
             Here's the timetable for this week:
@@ -199,9 +199,8 @@
 
 </div>
 
-@section('javascript')
-    @include('website.layouts.assets.javascripts')
-@show
+@include('website.layouts.assets.javascripts')
+@stack('javascript')
 
 </body>
 

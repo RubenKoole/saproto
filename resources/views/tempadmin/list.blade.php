@@ -14,7 +14,7 @@
 
                 <div class="card-header bg-dark text-white mb-1">
                     @yield('page-title')
-                    <a href="{{ route('tempadmin::add') }}" class="float-right badge-info badge">
+                    <a href="{{ route('tempadmin::add') }}" class="float-end bg-info badge">
                         Add new temporary admin.
                     </a>
                 </div>
@@ -44,21 +44,22 @@
                             <td>
                                 <a href="{{ route("user::profile", ['id' => $tempadmin->creator->getPublicId()]) }}">{{ $tempadmin->creator->name }}</a>
                             </td>
-                            <td @if(Carbon::parse($tempadmin->start_at)->isPast()) style="opacity: 0.5;" @endif>{{ $tempadmin->start_at }}</td>
+                            <td class="{{ Carbon::parse($tempadmin->start_at)->isPast() ? 'opacity-50' : '' }}">{{ $tempadmin->start_at }}</td>
                             <td>{{ $tempadmin->end_at }}</td>
                             <td>
                                 <a href="{{ route("tempadmin::edit", ['id' => $tempadmin->id]) }}">
-                                    <i class="fas fa-edit fa-fw mr-2"></i>
+                                    <i class="fas fa-edit fa-fw me-2"></i>
                                 </a>
 
-                                <a href="{{ route('tempadmin::endId', ['id' => $tempadmin->id]) }}"
-                                   onclick="return confirm('Are you sure?')" role="button">
-                                    @if(Carbon::parse($tempadmin->start_at)->isFuture())
-                                        <i class="fas fa-trash fa-fw text-danger"></i>
-                                    @else
-                                        <i class="fas fa-hourglass-end text-danger fa-fw"></i>
-                                    @endif
-                                </a>
+                                @include('website.layouts.macros.confirm-modal', [
+                                   'action' => route('tempadmin::endId', ['id' => $tempadmin->id]),
+                                   'text' => Carbon::parse($tempadmin->start_at)->isFuture() ?
+                                               '<i class="fas fa-trash fa-fw text-danger"></i>' :
+                                               '<i class="fas fa-hourglass-end text-danger fa-fw"></i>',
+                                   'title' => 'Confirm End Rights',
+                                   'message' => 'Are you sure you want to end the temporary ProTube admin rights of '.$tempadmin->user->name.'?',
+                                   'confirm' => 'End Rights',
+                                ])
                             </td>
                         </tr>
 
@@ -66,7 +67,7 @@
 
                     @foreach($pastTempadmins as $pastTempadmin)
 
-                        <tr style="opacity: 0.5;">
+                        <tr class="opacity-50">
                             <td>
                                 <a href="{{ route("user::profile", ['id' => $pastTempadmin->user->getPublicId()]) }}">{{ $pastTempadmin->user->name }}</a>
                             </td>

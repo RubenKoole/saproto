@@ -80,7 +80,11 @@
                         window.alert('Something went wrong voting the idea. Please try again.');
                     }
                 })
-            }
-        });
+            })
+            .catch(err => {
+                console.error(err)
+                window.alert('Something went wrong voting the idea. Please try again.')
+            })
+        }
     </script>
-@endsection
+@endpush

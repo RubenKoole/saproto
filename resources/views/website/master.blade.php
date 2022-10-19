@@ -1,29 +1,26 @@
 <!DOCTYPE html>
-<html lang="en" style="position: relative; min-height: 100%;">
+<html lang="en" class="position-relative mh-100">
 
 <head>
 
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no"/>
+    <meta name="csrf-token" content="{{ csrf_token() }}"/>
 
     <meta name="theme-color" content="#C1FF00">
 
     <link rel="shortcut icon" href="{{ asset('images/favicons/favicon'.mt_rand(1, 4).'.png') }}"/>
-    <link rel="search" type="application/opensearchdescription+xml" title="S.A. Proto"
-          href="{{ route('search::opensearch') }}"/>
+    <link rel="search" type="application/opensearchdescription+xml" title="S.A. Proto" href="{{ route('search::opensearch') }}"/>
 
     <title>@if(config('app.env') != 'production') [{{ strtoupper(config('app.env')) }}] @endif S.A. Proto
         | @yield('page-title','Default Page Title')</title>
 
-    @section('head')
-    @show
+    @stack('head')
 
     @include('website.layouts.assets.stylesheets')
 
-    @section('stylesheet')
-        @include('website.layouts.assets.customcss')
-    @show
+    @stack('stylesheet')
 
     @section('opengraph')
         <meta property="og:url" content="{{ Request::url() }}"/>
@@ -37,25 +34,32 @@
 
 </head>
 
-<body class="template-{{ $viewName }}"
-      style="margin-bottom: 216px; @section('body-style')@show">
+<body class="template-{{ $viewName }}">
 
 @yield('body')
 
+@include('discord.modal')
+
 @if(!App::isDownForMaintenance())
 
-@section('javascript')
+    @include('website.layouts.macros.flashmessages')
+
+    <div class="position-absolute top-0 start-50" style="margin-top: 70px" id="alert-wrapper"></div>
+
+    @include('website.layouts.macros.achievement-popup')
+
+    @include('website.layouts.macros.errormessages')
+
+    <!-- Modals -->
+    @stack('modals')
+
+    <!-- Global scripts -->
     @include('website.layouts.assets.javascripts')
-@show
 
-@include('website.layouts.macros.flashmessages')
-
-@include('website.layouts.macros.errormessages')
+    <!-- Page scripts -->
+    @stack('javascript')
 
 @endif
-
-@include('slack.modal')
-@include('discord.modal')
 
 </body>
 

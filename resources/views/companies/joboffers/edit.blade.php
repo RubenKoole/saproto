@@ -39,11 +39,20 @@
                         <div class="form-group">
                             <label for="title">Title</label>
                             <input type="text" class="form-control" id="title" name="title"
-                                   placeholder="Chief Executive Officer" value="{{ $joboffer->title or '' }}" required>
+                                   placeholder="Chief Executive Officer" value="{{ $joboffer->title ?? '' }}" required>
                         </div>
 
-
                         <div class="form-group">
+                            <label for="information_type_selector">Offer information type</label>
+                            <select id="information_type_selector" class="form-control">
+                                <option value="" @if(!$joboffer || ($joboffer->description == null && $joboffer->redirect_url == null)) selected @endif disabled>Select a type...
+                                </option>
+                                <option value="description" @if($joboffer && $joboffer->description != null) selected @endif>Description</option>
+                                <option value="url" @if($joboffer && $joboffer->redirect_url != null) selected @endif>Redirect URL</option>
+                            </select>
+                        </div>
+
+                        <div id="information_type_description" class="form-group">
                             <label for="editor-description">Description</label>
                             @include('website.layouts.macros.markdownfield', [
                                 'name' => 'description',
@@ -52,11 +61,27 @@
                             ])
                         </div>
 
+                        <div id="information_type_url" class="form-group">
+                            <label for="redirect_url">Redirect URL</label>
+                            <input type="text" class="form-control" id="redirect_url" name="redirect_url"
+                                   placeholder="https://example.com/apply" value="{{ $joboffer->redirect_url ?? '' }}">
+                        </div>
+
+                        @if ($errors->any())
+                            <div class="alert alert-danger">
+                                <ul>
+                                    @foreach ($errors->all() as $error)
+                                        <li>{{ $error }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
                     </div>
 
                     <div class="card-footer">
                         <a class="btn btn-default" href="{{ route("joboffers::admin") }}">Cancel</a>
-                        <button type="submit" class="btn btn-success float-right">Save</button>
+                        <button type="submit" class="btn btn-success float-end">Save</button>
                     </div>
 
                 </div>
@@ -68,3 +93,43 @@
     </form>
 
 @endsection
+
+@push('javascript')
+
+    <script nonce="{{ csp_nonce() }}">
+        const typeUrl = document.getElementById('information_type_url')
+        const redirectUrl = document.getElementById('redirect_url')
+        const typeDescription = document.getElementById('information_type_description')
+        const typeSelector = document.getElementById('information_type_selector')
+        const easymde = window.easyMDEFields['markdownfield-description']
+
+        updateInformationDisplay()
+        typeSelector.addEventListener('change', updateInformationDisplay)
+
+        function updateInformationDisplay() {
+            switch(typeSelector.value) {
+                case 'description':
+                    typeDescription.classList.remove('d-none')
+                    typeUrl.classList.add('d-none')
+                    redirectUrl.value = ''
+                    redirectUrl.required = false
+                    break
+                case 'url':
+                    typeDescription.classList.add('d-none')
+                    typeUrl.classList.remove('d-none')
+                    redirectUrl.required = true
+                    easymde.value('')
+                    break
+                default:
+                    typeUrl.classList.add('d-none')
+                    typeUrl.querySelector('input').value = ''
+                    typeDescription.classList.add('d-none')
+                    typeDescription.querySelectorAll('input').value = ''
+                    typeSelector.required = true
+                    easymde.value('')
+                    break
+            }
+        }
+    </script>
+
+@endpush

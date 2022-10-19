@@ -14,10 +14,10 @@
 
                 <div class="card-header bg-dark text-white mb-1">
                     @yield('page-title')
-                    <a href="{{ route('announcement::clear') }}" class="badge badge-info float-right">
+                    <a href="{{ route('announcement::clear') }}" class="badge bg-info float-end">
                         Delete all past announcements.
                     </a>
-                    <a href="{{ route('announcement::add') }}" class="badge badge-info float-right mr-2">
+                    <a href="{{ route('announcement::add') }}" class="badge bg-info float-end me-2">
                         Add announcement.
                     </a>
                 </div>
@@ -42,15 +42,15 @@
 
                         @foreach($announcements as $announcement)
 
-                            <tr {!! (!$announcement->showByTime() ? 'style="opacity: 0.5;"': '') !!}>
+                            <tr {!! (!$announcement->show_by_time ? 'style="opacity: 0.5;"': '') !!}>
 
                                 <td>{{ $announcement->description }}</td>
                                 <td>{{ $announcement->display_from }}</td>
                                 <td>{{ $announcement->display_till }}</td>
-                                <td>{{ $announcement->textualVisibility() }}</td>
+                                <td>{{ $announcement->is_visible }}</td>
                                 <td>
                                     <a href="{{ route('announcement::edit', ['id' => $announcement->id]) }}">
-                                        <i class="fas fa-edit mr-2"></i>
+                                        <i class="fas fa-edit me-2"></i>
                                     </a>
                                     <a href="{{ route('announcement::delete', ['id' => $announcement->id]) }}">
                                         <i class="fas fa-trash"></i>

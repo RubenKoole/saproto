@@ -2,88 +2,326 @@
 
 namespace Proto\Models;
 
-
-use Illuminate\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon;
+use DateTime;
+use Eloquent;
+use Exception;
+use Hash;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
-
-use DateTime;
-use Carbon\Carbon;
-use Hash;
-
-use Zizaco\Entrust\Traits\EntrustUserTrait;
-use DirectAdmin\DirectAdmin;
-use Proto\Console\Commands\DirectAdminSync;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Passport\Client;
 use Laravel\Passport\HasApiTokens;
+use Solitweb\DirectAdmin\DirectAdmin;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
- * Class User
- * @package Proto\Models
+ * User Model.
+ *
+ * @property int $id
+ * @property string $name
+ * @property string $calling_name
+ * @property string $email
+ * @property string|null $password
+ * @property string|null $remember_token
+ * @property int|null $image_id
+ * @property string|null $birthdate
+ * @property string|null $phone
+ * @property string|null $diet
+ * @property string|null $website
+ * @property string $theme
+ * @property bool $phone_visible
+ * @property bool $address_visible
+ * @property bool $receive_sms
+ * @property bool $keep_protube_history
+ * @property bool $show_birthday
+ * @property bool $show_achievements
+ * @property bool $profile_in_almanac
+ * @property bool $show_omnomcom_total
+ * @property bool $show_omnomcom_calories
+ * @property bool $keep_omnomcom_history
+ * @property bool $disable_omnomcom
+ * @property bool $did_study_create
+ * @property bool $did_study_itech
+ * @property bool $signed_nda
+ * @property bool $pref_calendar_relevant_only
+ * @property float|null $pref_calendar_alarm
+ * @property string|null $utwente_username
+ * @property string|null $edu_username
+ * @property string|null $utwente_department
+ * @property string|null $tfa_totp_key
+ * @property string|null $personal_key
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read bool $completed_profile
+ * @property-read bool $is_member
+ * @property-read bool $is_protube_admin
+ * @property-read bool $photo_preview
+ * @property-read bool $signed_membership_form
+ * @property-read string|null $welcome_message
+ * @property-read StorageEntry|null $photo
+ * @property-read Address|null $address
+ * @property-read Bank|null $bank
+ * @property-read Member|null $member
+ * @property-read HelperReminder|null $helperReminderSubscriptions
+ * @property-read Collection|Achievement[] $achievements
+ * @property-read Collection|Client[] $clients
+ * @property-read Collection|EmailList[] $lists
+ * @property-read Collection|MollieTransaction[] $mollieTransactions
+ * @property-read Collection|OrderLine[] $orderlines
+ * @property-read Collection|PlayedVideo[] $playedVideos
+ * @property-read Collection|Quote[] $quotes
+ * @property-read Collection|RfidCard[] $rfid
+ * @property-read Collection|Tempadmin[] $tempadmin
+ * @property-read Collection|Token[] $tokens
+ * @property-read Collection|Committee[] $committees
+ * @property-read Collection|Role[] $roles
+ * @property-read Collection|Permission[] $permissions
+ * @property-read Collection|Committee[] $societies
+ * @method static bool|null forceDelete()
+ * @method static QueryBuilder|User onlyTrashed()
+ * @method static QueryBuilder|User withTrashed()
+ * @method static QueryBuilder|User withoutTrashed()
+ * @method static Builder|User role($roles, $guard = null)
+ * @method static Builder|User whereAddressVisible($value)
+ * @method static Builder|User whereBirthdate($value)
+ * @method static Builder|User whereCallingName($value)
+ * @method static Builder|User whereCreatedAt($value)
+ * @method static Builder|User whereDeletedAt($value)
+ * @method static Builder|User whereDidStudyCreate($value)
+ * @method static Builder|User whereDidStudyItech($value)
+ * @method static Builder|User whereDiet($value)
+ * @method static Builder|User whereDisableOmnomcom($value)
+ * @method static Builder|User whereEduUsername($value)
+ * @method static Builder|User whereEmail($value)
+ * @method static Builder|User whereId($value)
+ * @method static Builder|User whereImageId($value)
+ * @method static Builder|User whereKeepOmnomcomHistory($value)
+ * @method static Builder|User whereKeepProtubeHistory($value)
+ * @method static Builder|User whereName($value)
+ * @method static Builder|User wherePassword($value)
+ * @method static Builder|User wherePersonalKey($value)
+ * @method static Builder|User wherePhone($value)
+ * @method static Builder|User wherePhoneVisible($value)
+ * @method static Builder|User wherePrefCalendarAlarm($value)
+ * @method static Builder|User wherePrefCalendarRelevantOnly($value)
+ * @method static Builder|User whereProfileInAlmanac($value)
+ * @method static Builder|User whereReceiveSms($value)
+ * @method static Builder|User whereRememberToken($value)
+ * @method static Builder|User whereShowAchievements($value)
+ * @method static Builder|User whereShowBirthday($value)
+ * @method static Builder|User whereShowOmnomcomCalories($value)
+ * @method static Builder|User whereShowOmnomcomTotal($value)
+ * @method static Builder|User whereSignedNda($value)
+ * @method static Builder|User whereTfaTotpKey($value)
+ * @method static Builder|User whereTheme($value)
+ * @method static Builder|User whereUpdatedAt($value)
+ * @method static Builder|User whereUtwenteDepartment($value)
+ * @method static Builder|User whereUtwenteUsername($value)
+ * @method static Builder|User whereWebsite($value)
+ * @method static Builder|User newModelQuery()
+ * @method static Builder|User newQuery()
+ * @method static Builder|User permission($permissions)
+ * @method static Builder|User query()
+ * @mixin Eloquent
  */
-class User extends Model implements AuthenticatableContract, CanResetPasswordContract
+class User extends Authenticatable implements AuthenticatableContract, CanResetPasswordContract
 {
-    use Authenticatable, CanResetPassword, EntrustUserTrait, SoftDeletes, HasApiTokens;
-    protected $dates = ['deleted_at'];
+    use CanResetPassword;
+    use SoftDeletes;
+    use HasApiTokens;
+    use HasRoles;
 
-    /**
-     * The database table used by the model.
-     *
-     * @var string
-     */
     protected $table = 'users';
 
     protected $guarded = ['password', 'remember_token'];
 
     protected $appends = ['is_member', 'photo_preview', 'welcome_message', 'is_protube_admin'];
 
-    /**
-     * The attributes excluded from the model's JSON form.
-     *
-     * @var array
-     */
     protected $hidden = ['password', 'remember_token', 'personal_key', 'deleted_at', 'created_at', 'image_id', 'tfa_totp_key', 'updated_at', 'diet'];
 
+    protected $dates = ['deleted_at'];
+
+    /** @return string|null */
     public function getPublicId()
     {
-        return ($this->is_member ? $this->member->proto_username : null);
+        return $this->is_member ? $this->member->proto_username : null;
     }
 
+    /**
+     * @param string $public_id
+     * @return mixed|User|null
+     */
     public static function fromPublicId($public_id)
     {
         $member = Member::where('proto_username', $public_id)->first();
-        return ($member ? $member->user : null);
+        return $member ? $member->user : null;
     }
 
     /**
-     * IMPORTANT!!! IF YOU ADD ANY RELATION TO A USER IN ANOTHER MODEL, DON'T FORGET TO UPDATE THIS
-     * @return bool whether or not the user is stale (not in use, can be *really* deleted safely)
+     * **IMPORTANT!** IF YOU ADD ANY RELATION TO A USER IN ANOTHER MODEL, DON'T FORGET TO UPDATE THIS METHOD.
+     * @return bool whether the user is stale (not in use, can really be deleted safely).
      */
     public function isStale()
     {
-        if ($this->password) return false;
-        if ($this->edu_username) return false;
-        if (strtotime($this->created_at) > strtotime('-1 hour')) return false;
-        if (Member::withTrashed()->where('user_id', $this->id)->first()) return false;
-        if (Bank::where('user_id', $this->id)->first()) return false;
-        if (Address::where('user_id', $this->id)->first()) return false;
-        if (OrderLine::where('user_id', $this->id)->count() > 0) return false;
-        if (CommitteeMembership::withTrashed()->where('user_id', $this->id)->count() > 0) return false;
-        if (Quote::where('user_id', $this->id)->count() > 0) return false;
-        if (EmailListSubscription::where('user_id', $this->id)->count() > 0) return false;
-        if (RfidCard::where('user_id', $this->id)->count() > 0) return false;
-        if (PlayedVideo::where('user_id', $this->id)->count() > 0) return false;
-        if (AchievementOwnership::where('user_id', $this->id)->count() > 0) return false;
-        return true;
+        return ! (
+            $this->password ||
+            $this->edu_username ||
+            strtotime($this->created_at) > strtotime('-1 hour') ||
+            Member::withTrashed()->where('user_id', $this->id)->first() ||
+            Bank::where('user_id', $this->id)->first() ||
+            Address::where('user_id', $this->id)->first() ||
+            OrderLine::where('user_id', $this->id)->count() > 0 ||
+            CommitteeMembership::withTrashed()->where('user_id', $this->id)->count() > 0 ||
+            Quote::where('user_id', $this->id)->count() > 0 ||
+            EmailListSubscription::where('user_id', $this->id)->count() > 0 ||
+            RfidCard::where('user_id', $this->id)->count() > 0 ||
+            PlayedVideo::where('user_id', $this->id)->count() > 0 ||
+            AchievementOwnership::where('user_id', $this->id)->count() > 0
+        );
     }
 
-    public function roles()
+    /** @return BelongsTo */
+    public function photo()
     {
-        return $this->belongsToMany('Proto\Models\Role', 'role_user');
+        return $this->belongsTo('Proto\Models\StorageEntry', 'image_id');
     }
 
+    /** @return BelongsTo */
+    public function helperReminderSubscriptions()
+    {
+        return $this->belongsTo('Proto\Models\HelperReminder');
+    }
+
+    /** @return BelongsToMany */
+    private function getGroups()
+    {
+        return $this->belongsToMany('Proto\Models\Committee', 'committees_users')
+            ->where(function ($query) {
+                $query->whereNull('committees_users.deleted_at')
+                    ->orWhere('committees_users.deleted_at', '>', Carbon::now());
+            })
+            ->where('committees_users.created_at', '<', Carbon::now())
+            ->withPivot(['id', 'role', 'edition', 'created_at', 'deleted_at'])
+            ->withTimestamps()
+            ->orderBy('pivot_created_at', 'desc');
+    }
+
+    /** @return BelongsToMany */
+    public function lists()
+    {
+        return $this->belongsToMany('Proto\Models\EmailList', 'users_mailinglists', 'user_id', 'list_id');
+    }
+
+    /** @return BelongsToMany */
+    public function achievements()
+    {
+        return $this->belongsToMany('Proto\Models\Achievement', 'achievements_users')->withPivot(['id'])->withTimestamps()->orderBy('pivot_created_at', 'desc');
+    }
+
+    /** @return BelongsToMany */
+    public function committees()
+    {
+        return $this->getGroups()->where('is_society', false);
+    }
+
+    /** @return BelongsToMany */
+    public function societies()
+    {
+        return $this->getGroups()->where('is_society', true);
+    }
+
+    /** @return HasOne */
+    public function member()
+    {
+        return $this->hasOne('Proto\Models\Member');
+    }
+
+    /** @return HasOne */
+    public function bank()
+    {
+        return $this->hasOne('Proto\Models\Bank');
+    }
+
+    /** @return HasOne */
+    public function address()
+    {
+        return $this->hasOne('Proto\Models\Address');
+    }
+
+    /** @return HasMany */
+    public function orderlines()
+    {
+        return $this->hasMany('Proto\Models\OrderLine');
+    }
+
+    /** @return HasMany */
+    public function tempadmin()
+    {
+        return $this->hasMany('Proto\Models\Tempadmin');
+    }
+
+    /** @return HasMany */
+    public function quotes()
+    {
+        return $this->hasMany('Proto\Models\Quote');
+    }
+
+    /** @return HasMany */
+    public function rfid()
+    {
+        return $this->hasMany('Proto\Models\RfidCard');
+    }
+
+    /** @return HasMany */
+    public function tokens()
+    {
+        return $this->hasMany('Proto\Models\Token');
+    }
+
+    /** @return HasMany */
+    public function playedVideos()
+    {
+        return $this->hasMany('Proto\Models\PlayedVideo');
+    }
+
+    /** @return HasMany */
+    public function mollieTransactions()
+    {
+        return $this->hasMany('Proto\Models\MollieTransaction');
+    }
+
+    /**
+     * Use this method instead of $user->photo->generate to bypass the "no profile" problem.
+     * @param int $w
+     * @param int $h
+     * @return string Path to a resized version of someone's profile picture.
+     */
+    public function generatePhotoPath($w = 100, $h = 100)
+    {
+        if ($this->photo) {
+            return $this->photo->generateImagePath($w, $h);
+        } else {
+            return asset('images/default-avatars/other.png');
+        }
+    }
+
+    /**
+     * @param string $password
+     * @throws Exception
+     */
     public function setPassword($password)
     {
         // Update Laravel Password
@@ -92,164 +330,54 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
 
         // Update DirectAdmin Password
         if ($this->is_member) {
-            $da = new DirectAdmin;
+            $da = new DirectAdmin();
             $da->connect(getenv('DA_HOSTNAME'), getenv('DA_PORT'));
             $da->set_login(getenv('DA_USERNAME'), getenv('DA_PASSWORD'));
-
-            $da->set_method('post');
-            $q = DirectAdminSync::constructQuery('CMD_API_POP', [
+            $da->set_method('POST');
+            $da->query('/CMD_API_POP', [
                 'action' => 'modify',
                 'domain' => env('DA_DOMAIN'),
                 'user' => $this->member->proto_username,
                 'newuser' => $this->member->proto_username,
                 'passwd' => $password,
                 'passwd2' => $password,
-                'quota' => 0, # Unlimited
-                'limit' => 0 # Unlimited
+                'quota' => 0, // Unlimited
+                'limit' => 0, // Unlimited
             ]);
-            $da->query($q);
         }
-
 
         // Remove breach notification flag
         HashMapItem::where('key', 'pwned-pass')->where('subkey', $this->id)->delete();
     }
 
-    /**
-     * @return mixed The associated membership details, if any.
-     */
-    public function member()
-    {
-        return $this->hasOne('Proto\Models\Member');
-    }
-
-    public function orderlines()
-    {
-        return $this->hasMany('Proto\Models\OrderLine');
-    }
-
+    /** @return bool */
     public function hasUnpaidOrderlines()
     {
         foreach ($this->orderlines as $orderline) {
-            if (!$orderline->isPayed()) return true;
-            if ($orderline->withdrawal && $orderline->withdrawal->id !== 1 && !$orderline->withdrawal->closed) return true;
+            if (! $orderline->isPayed()) {
+                return true;
+            }
+            if ($orderline->withdrawal && $orderline->withdrawal->id !== 1 && ! $orderline->withdrawal->closed) {
+                return true;
+            }
         }
         return false;
     }
 
-    public function tempadmin()
-    {
-        return $this->hasMany('Proto\Models\Tempadmin');
-    }
-
+    /** @return bool */
     public function isTempadmin()
     {
         foreach ($this->tempadmin as $tempadmin) {
-            if (Carbon::now()->between(Carbon::parse($tempadmin->start_at), Carbon::parse($tempadmin->end_at))) return true;
+            if (Carbon::now()->between(Carbon::parse($tempadmin->start_at), Carbon::parse($tempadmin->end_at))) {
+                return true;
+            }
         }
-
         return false;
     }
 
-    public function isProtubeAdmin()
-    {
-        return $this->can('protube') || $this->isTempadmin();
-    }
-
     /**
-     * @return mixed The associated bank authorization, if any.
-     */
-    public function bank()
-    {
-        return $this->hasOne('Proto\Models\Bank');
-    }
-
-    /**
-     * @return mixed The profile picture of this user.
-     */
-    public function photo()
-    {
-        return $this->belongsTo('Proto\Models\StorageEntry', 'image_id');
-    }
-
-    /**
-     * Returns a sized version of someone's profile photo, use this instead of $user->photo->generate to bypass the no profile problem.
-     * @param int $x
-     * @param int $y
-     * @return mixed
-     */
-    public function generatePhotoPath($x = 100, $y = 100)
-    {
-        if ($this->photo) {
-            return $this->photo->generateImagePath($x, $y);
-        } else {
-            return asset('images/default-avatars/other.png');
-        }
-    }
-
-    /**
-     * @return mixed The associated addresses, if any.
-     */
-    public function address()
-    {
-        return $this->hasOne('Proto\Models\Address');
-    }
-
-    /**
-     * @return mixed Returns all committees a user is currently a member of.
-     */
-    public function committees()
-    {
-        return $this->getGroups()->where('is_society', false);
-    }
-
-    /**
-     * @return mixed Returns all societies a user is currently a member of.
-     */
-    public function societies()
-    {
-        return $this->getGroups()->where('is_society', true);
-    }
-
-    /**
-     * @return mixed Any quotes the user posted
-     */
-    public function quotes()
-    {
-        return $this->hasMany('Proto\Models\Quote');
-    }
-
-    public function lists()
-    {
-        return $this->belongsToMany('Proto\Models\EmailList', 'users_mailinglists', 'user_id', 'list_id');
-    }
-
-    /**
-     * @return mixed Any cards linked to this account
-     */
-    public function rfid()
-    {
-        return $this->hasMany('Proto\Models\RfidCard');
-    }
-
-    /**
-     * @return mixed Any tokens the user has
-     */
-    public function tokens()
-    {
-        return $this->hasMany('Proto\Models\Token');
-    }
-
-    /**
-     * @return mixed Any videos played by the user.
-     */
-    public function playedVideos()
-    {
-        return $this->hasMany('Proto\Models\PlayedVideo');
-    }
-
-    /**
-     * @return mixed The age in years of a user.
+     * @return int
+     * @throws Exception
      */
     public function age()
     {
@@ -257,26 +385,29 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
     }
 
     /**
-     * @param User $user
-     * @return bool Whether the user is currently in the specified committee.
+     * @param Committee $committee
+     * @return bool
      */
-    public function isInCommittee(Committee $committee)
+    public function isInCommittee($committee)
     {
         return in_array($this->id, $committee->users->pluck('id')->toArray());
     }
 
+    /**
+     * @param string $slug
+     * @return bool
+     */
     public function isInCommitteeBySlug($slug)
     {
         $committee = Committee::where('slug', $slug)->first();
         return $committee && $this->isInCommittee($committee);
     }
 
-    /**
-     * @return bool Whether the user is an active member of the association.
-     */
+    /** @return bool */
     public function isActiveMember()
     {
-        return count(CommitteeMembership::withTrashed()
+        return count(
+            CommitteeMembership::withTrashed()
                 ->where('user_id', $this->id)
                 ->where('created_at', '<', date('Y-m-d H:i:s'))
                 ->where(function ($q) {
@@ -286,22 +417,24 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
                 ->with('committee')
                 ->get()
                 ->where('committee.is_society', false)
-            ) > 0;
+        ) > 0;
     }
 
-    /**
-     * @return mixed Any Achievements the user aquired
-     */
+    /** @return Achievement[] */
     public function achieved()
     {
         $achievements = $this->achievements;
-        $r = array();
+        $acquired = [];
         foreach ($achievements as $achievement) {
-            $r[] = $achievement;
+            $acquired[] = $achievement;
         }
-        return $r;
+        return $acquired;
     }
 
+    /**
+     * @param int $limit
+     * @return Withdrawal[]
+     */
     public function withdrawals($limit = 0)
     {
         $withdrawals = [];
@@ -316,25 +449,17 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
         return $withdrawals;
     }
 
-    public function mollieTransactions()
-    {
-        return $this->hasMany('Proto\Models\MollieTransaction');
-    }
-
-    public function achievements()
-    {
-        return $this->belongsToMany('Proto\Models\Achievement', 'achievements_users')->withPivot(array('id'))->withTimestamps()->orderBy('pivot_created_at', 'desc');
-    }
-
+    /** @return string|null*/
     public function websiteUrl()
     {
-        if (preg_match("/(?:http|https):\/\/(?:.*)/i", $this->website) === 1) {
+        if (preg_match("/(?:http|https):\/\/.*/i", $this->website) === 1) {
             return $this->website;
         } else {
-            return "http://" . $this->website;
+            return 'https://'.$this->website;
         }
     }
 
+    /** @return string|null*/
     public function websiteDisplay()
     {
         if (preg_match("/(?:http|https):\/\/(.*)/i", $this->website, $matches) === 1) {
@@ -344,40 +469,61 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
         }
     }
 
+    /** @return bool */
     public function hasDiet()
     {
-        return (strlen(str_replace(["\r", "\n", " "], "", $this->diet)) > 0 ? true : false);
+        return strlen(str_replace(["\r", "\n", ' '], '', $this->diet)) > 0;
     }
 
+    /** @return string*/
     public function getDisplayEmail()
     {
         return ($this->is_member && $this->isActiveMember()) ? sprintf('%s@%s', $this->member->proto_username, config('proto.emaildomain')) : $this->email;
     }
 
     /**
-     * This function returns a guess of the system for whether or not they are a first year student.
-     * Note that this is a GUESS. There is no way for us to know sure without manually setting a flag on each user.
-     * @return bool Whether or not the system thinks this is a first year.
+     * This method returns a guess of the system for whether this user is a first year student.
+     * Note that this is a _GUESS_. There is no way for us to know sure without manually setting a flag on each user.
+     * @return bool Whether the system thinks the user is a first year.
      */
     public function isFirstYear()
     {
         return $this->is_member
-            && Carbon::instance(new DateTime($this->member->created_at))->age < 1
+            && Carbon::createFromTimestamp($this->member->created_at)->age < 1
             && $this->did_study_create;
     }
 
+    /** @return bool */
     public function hasTFAEnabled()
     {
         return $this->tfa_totp_key !== null;
     }
 
-    public function clearMemberProfile()
+    /** @return void */
+    public function generateNewPersonalKey()
     {
-        $this->birthdate = null;
-        $this->phone = null;
+        $this->personal_key = str_random(64);
         $this->save();
     }
 
+    /** @return string */
+    public function getPersonalKey()
+    {
+        if ($this->personal_key == null) {
+            $this->generateNewPersonalKey();
+        }
+        return $this->personal_key;
+    }
+
+    /** @return Token */
+    public function generateNewToken()
+    {
+        $token = new Token();
+        $token->generate($this);
+        return $token;
+    }
+
+    /** @return Token */
     public function getToken()
     {
         if (count($this->tokens) > 0) {
@@ -389,39 +535,29 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
         return $token;
     }
 
-    public function getMemberships() {
-        $memberships['pending'] = Member::withTrashed()->where('user_id', '=', $this->id)->where('deleted_at', '=', null)->where('pending', '=', true)->get();
-        $memberships['previous'] = Member::withTrashed()->where('user_id', '=', $this->id)->where('deleted_at', '!=', null)->get();
-
-        return $memberships;
-    }
-
-    public function generateNewToken()
+    /** Removes user's birthdate and phone number. */
+    public function clearMemberProfile()
     {
-        $token = new Token();
-        $token->generate($this);
-        return $token;
-    }
-
-    public function generateNewPersonalKey()
-    {
-        $this->personal_key = str_random(64);
+        $this->birthdate = null;
+        $this->phone = null;
         $this->save();
     }
 
-    public function getPersonalKey()
+    /** @return array<string, Collection<Member>> */
+    public function getMemberships()
     {
-        if ($this->personal_key == null) {
-            $this->generateNewPersonalKey();
-        }
-        return $this->personal_key;
+        $memberships['pending'] = Member::withTrashed()->where('user_id', '=', $this->id)->where('deleted_at', '=', null)->where('is_pending', '=', true)->get();
+        $memberships['previous'] = Member::withTrashed()->where('user_id', '=', $this->id)->where('deleted_at', '!=', null)->get();
+        return $memberships;
     }
 
+    /** @return float|null */
     public function getCalendarAlarm()
     {
         return $this->pref_calendar_alarm;
     }
 
+    /** @param float|null $hours */
     public function setCalendarAlarm($hours)
     {
         $hours = floatval($hours);
@@ -429,53 +565,56 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
         $this->save();
     }
 
+    /** @return bool */
     public function getCalendarRelevantSetting()
     {
         return $this->pref_calendar_relevant_only;
     }
 
+    /** @return void */
     public function toggleCalendarRelevantSetting()
     {
-        $this->pref_calendar_relevant_only = !$this->pref_calendar_relevant_only;
+        $this->pref_calendar_relevant_only = ! $this->pref_calendar_relevant_only;
         $this->save();
     }
 
-    public function helperReminderSubscriptions()
-    {
-        return $this->belongsTo('Proto\Models\HelperReminder');
-    }
-
+    /** @return bool */
     public function getCompletedProfileAttribute()
     {
         return $this->birthdate !== null && $this->phone !== null;
     }
 
+    /** @return bool Whether user has a current membership that is not pending. */
     public function getIsMemberAttribute()
     {
-        return $this->member && !$this->member->pending;
+        return $this->member && ! $this->member->is_pending;
     }
 
-    public function getSignedMembershipFormAttribute() {
-        if ($this->member) {
-            return $this->member->membershipForm !== null;
-        }
+    /** @return bool */
+    public function getSignedMembershipFormAttribute()
+    {
+        return $this->member && $this->member->membershipForm !== null;
     }
 
+    /** @return bool */
     public function getIsProtubeAdminAttribute()
     {
-        return $this->isProtubeAdmin();
+        return $this->can('protube') || $this->isTempadmin();
     }
 
+    /** @return string */
     public function getPhotoPreviewAttribute()
     {
         return $this->generatePhotoPath();
     }
 
+    /** @return string */
     public function getIcalUrl()
     {
-        return route("ical::calendar", ["personal_key" => $this->getPersonalKey()]);
+        return route('ical::calendar', ['personal_key' => $this->getPersonalKey()]);
     }
 
+    /** @return string|null */
     public function getWelcomeMessageAttribute()
     {
         $welcomeMessage = WelcomeMessage::where('user_id', $this->id)->first();
@@ -485,17 +624,4 @@ class User extends Model implements AuthenticatableContract, CanResetPasswordCon
             return null;
         }
     }
-
-    private function getGroups() {
-        return $this->belongsToMany('Proto\Models\Committee', 'committees_users')
-            ->where(function ($query) {
-                $query->whereNull('committees_users.deleted_at')
-                    ->orWhere('committees_users.deleted_at', '>', Carbon::now());
-            })
-            ->where('committees_users.created_at', '<', Carbon::now())
-            ->withPivot(array('id', 'role', 'edition', 'created_at', 'deleted_at'))
-            ->withTimestamps()
-            ->orderBy('pivot_created_at', 'desc');
-    }
-
 }

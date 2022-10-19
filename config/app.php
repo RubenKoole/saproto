@@ -50,7 +50,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL'),
+    'url' => env('APP_URL', 'http://localhost'),
 
     /*
     |--------------------------------------------------------------------------
@@ -108,21 +108,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Logging Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Here you may configure the log settings for your application. Out of
-    | the box, Laravel uses the Monolog PHP logging library. This gives
-    | you a variety of powerful log handlers / formatters to utilize.
-    |
-    | Available Settings: "single", "daily", "syslog", "errorlog"
-    |
-    */
-
-    'log' => env('APP_LOG', 'daily'),
-
-    /*
-    |--------------------------------------------------------------------------
     | Autoloaded Service Providers
     |--------------------------------------------------------------------------
     |
@@ -172,24 +157,21 @@ return [
         /*
          * External Service Providers
          */
-        Barryvdh\LaravelIdeHelper\IdeHelperServiceProvider::class,
         Collective\Html\HtmlServiceProvider::class,
-        Zizaco\Entrust\EntrustServiceProvider::class,
         Illuminate\Mail\MailServiceProvider::class,
         PragmaRX\Google2FA\Vendor\Laravel\ServiceProvider::class,
         Intervention\Image\ImageServiceProvider::class,
-        Barryvdh\Snappy\ServiceProvider::class,
+        Biscolab\ReCaptcha\ReCaptchaServiceProvider::class,
         Milon\Barcode\BarcodeServiceProvider::class,
         GrahamCampbell\Markdown\MarkdownServiceProvider::class,
         Alaouy\Youtube\YoutubeServiceProvider::class,
         Mollie\Laravel\MollieServiceProvider::class,
-        Lisennk\Laravel\SlackWebApi\Providers\SlackApiServiceProvider::class,
         willvincent\Feeds\FeedsServiceProvider::class,
         Vinkla\Hashids\HashidsServiceProvider::class,
         nickurt\PwnedPasswords\ServiceProvider::class,
-        ApiPostcode\ApiPostcodeServiceProvider::class,
+        nickurt\PostcodeApi\ServiceProvider::class,
         Aacotroneo\Saml2\Saml2ServiceProvider::class,
-        Biscolab\ReCaptcha\ReCaptchaServiceProvider::class
+        Sentry\Laravel\ServiceProvider::class,
 
     ],
 
@@ -238,18 +220,15 @@ return [
         'URL' => Illuminate\Support\Facades\URL::class,
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
-
-        'Entrust' => Zizaco\Entrust\EntrustServiceProvider::class,
         'Form' => Collective\Html\FormFacade::class,
         'Html' => Collective\Html\HtmlFacade::class,
 
-        'role' => Zizaco\Entrust\Middleware\EntrustRole::class,
-        'permission' => Zizaco\Entrust\Middleware\EntrustPermission::class,
-        'ability' => Zizaco\Entrust\Middleware\EntrustAbility::class,
+        'Role' => Spatie\Permission\Models\Role::class,
+        'Permission' => Spatie\Permission\Models\Permission::class,
 
         'Image' => Intervention\Image\Facades\Image::class,
 
-        'PDF' => Barryvdh\Snappy\Facades\SnappyPdf::class,
+        'PDF' => Spipu\Html2Pdf\Html2Pdf::class,
 
         'DNS1D' => Milon\Barcode\Facades\DNS1DFacade::class,
         'DNS2D' => Milon\Barcode\Facades\DNS2DFacade::class,
@@ -260,29 +239,9 @@ return [
 
         'ReCaptcha' => Biscolab\ReCaptcha\Facades\ReCaptcha::class,
 
-        'Committee' => Proto\Models\Committee::class,
-        'User' => Proto\Models\User::class,
-        'Role' => Proto\Models\Role::class,
-        'Permission' => Proto\Models\Permission::class,
-        'Member' => Proto\Models\Member::class,
-        'EmailList' => \Proto\Models\EmailList::class,
-        'Email' => \Proto\Models\Email::class,
-        'Event' => \Proto\Models\Event::class,
-        'Product' => \Proto\Models\Product::class,
-        'MollieTransaction' => \Proto\Models\MollieTransaction::class,
-        'Newsletter' => \Proto\Models\Newsletter::class,
-        'PlayedVideo' => \Proto\Models\PlayedVideo::class,
-        'Announcement' => \Proto\Models\Announcement::class,
-
-        'SlackController' => \Proto\Http\Controllers\SlackController::class,
-        'WithdrawalController' => \Proto\Http\Controllers\WithdrawalController::class,
-        'MollieController' => \Proto\Http\Controllers\MollieController::class,
-
         'Youtube' => Alaouy\Youtube\Facades\Youtube::class,
 
         'Mollie' => Mollie\Laravel\Facades\Mollie::class,
-
-        'SlackApi' => \Lisennk\Laravel\SlackWebApi\Facades\SlackApi::class,
 
         'Feeds' => willvincent\Feeds\Facades\FeedsFacade::class,
 
@@ -290,9 +249,7 @@ return [
 
         'PwnedPasswords' => nickurt\PwnedPasswords\Facade::class,
 
-        'NumberFormatter' => NumberFormatter::class,
-
-        'Postcode' => ApiPostcode\Facade\Postcode::class,
+        'Postcode' => nickurt\PostcodeApi\ServiceProvider::class,
 
     ],
 

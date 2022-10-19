@@ -3,19 +3,12 @@
 namespace Proto\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
-use DirectAdmin\DirectAdmin;
-
 use Proto\Models\Alias;
 use Proto\Models\Committee;
 use Proto\Models\CommitteeMembership;
 use Proto\Models\Member;
+use Solitweb\DirectAdmin\DirectAdmin;
 
-
-/**
- * TODO
- * Autorelate permissions to roles.
- */
 class DirectAdminSync extends Command
 {
     /**
@@ -44,114 +37,57 @@ class DirectAdminSync extends Command
 
     /**
      * Execute the console command.
-     *
-     * @return mixed
      */
     public function handle()
     {
-
-        $da = new DirectAdmin;
+        $da = new DirectAdmin();
         $da->connect(getenv('DA_HOSTNAME'), getenv('DA_PORT'));
         $da->set_login(getenv('DA_USERNAME'), getenv('DA_PASSWORD'));
 
         // Mail forwarders
-        $da->set_method('get');
-        $da->query($this->constructQuery('CMD_API_EMAIL_FORWARDERS', [
-            'domain' => getenv('DA_DOMAIN')
-        ]));
-
-        $current = $this->decodeForwarders($da->fetch_body());
+        $da->query('/CMD_API_EMAIL_FORWARDERS', [
+            'domain' => getenv('DA_DOMAIN'),
+        ]);
+        $current = $da->fetch_parsed_body();
         $target = $this->constructForwarderList();
-
-        $patch = $this->constructPatchList($current, $target);
-
-        $forwarder_queries = $this->applyPatchList($patch);
+        $patch = $this->constructForwarderPatchList($current, $target);
+        $forwarder_queries = $this->applyForwarderPatchList($patch);
 
         // E-mail accounts
-        $da->query($this->constructQuery('CMD_API_POP', [
+        $da->query('/CMD_API_POP', [
             'domain' => getenv('DA_DOMAIN'),
-            'action' => 'list'
-        ]));
-
-        $current = $this->decodeAccounts($da->fetch_body());
+            'action' => 'list',
+        ]);
+        $current = $da->fetch_parsed_body();
         $target = $this->constructAccountList();
-
-        $patch = $this->constructAccountPatchList($current, $target);
-
+        $patch = $this->constructAccountPatchList($current['list'], $target);
         $account_queries = $this->applyAccountPatchList($patch);
 
         // Execute queries
         $this->executeQueries($da, array_merge($forwarder_queries, $account_queries));
-
         $this->info('Done!');
     }
 
-    public static function constructQuery($command, $options = [])
-    {
-        $query = '/' . $command;
-        if (count($options) > 0) {
-            $query .= '?';
-            foreach ($options as $key => $val) {
-                $query .= $key . '=' . urlencode($val) . '&';
-            }
-        }
-        return $query;
-    }
-
-    private function decodeForwarders($string)
-    {
-        $data = [];
-        if (strlen($string) > 0) {
-            $array = explode('&', urldecode($string));
-            foreach ($array as $entry) {
-                $item = explode('=', $entry);
-                $data[$item[0]] = (array)explode(',', $item[1]);
-            }
-        }
-        return $data;
-    }
-
-    private function decodeAccounts($string)
-    {
-        $data = [];
-        if (strlen($string) > 0) {
-            $array = explode('&', urldecode($string));
-            foreach ($array as $entry) {
-                $item = explode('=', $entry);
-                $data[] = $item[1];
-            }
-        }
-        return $data;
-
-    }
-
-    private function decodeResponse($string)
-    {
-        $data = [];
-        $array = explode('&', urldecode($string));
-        for ($i = 0; $i < 2; $i++) {
-            $e = explode('=', $array[$i]);
-            $data[$e[0]] = $e[1];
-        }
-        return $data;
-    }
-
+    /**
+     * Generate the user, committee and manually defined mail forwarders.
+     *
+     * @return array
+     */
     private function constructForwarderList()
     {
         $data = [];
 
         // Constructing user forwarders.
-        $members = Member::get();
+        $members = Member::all();
         foreach ($members as $member) {
-            $data[$member->proto_username] = [
-                $member->user->email
-            ];
+            if ($member->proto_username) {
+                $data[$member->proto_username] = [$member->user->email];
+            }
         }
 
         // Constructing committee forwarders.
         $committees = Committee::all();
         foreach ($committees as $committee) {
-
             $destinations = [];
 
             $users = CommitteeMembership::withTrashed()
@@ -168,31 +104,33 @@ class DirectAdminSync extends Command
 
             if (count($destinations) > 0) {
                 $data[strtolower($committee->slug)] = $destinations;
-                $data['committees'][] = strtolower($committee->slug . '@' . config('proto.emaildomain'));
+                $data['committees'][] = strtolower($committee->slug.'@'.config('proto.emaildomain'));
             }
-
         }
 
         // Constructing manual aliases.
         $aliases = Alias::all();
         foreach ($aliases as $alias) {
-            if ($alias->destination) {
-                $data[$alias->alias][] = $alias->destination;
-            } else {
-                $data[$alias->alias][] = $alias->user->email;
-            }
+            $data[$alias->alias][] = $alias->destination ?? $alias->user->email;
         }
 
         return $data;
     }
 
+    /**
+     * Generate the list of accounts for all members.
+     *
+     * @return array
+     */
     private function constructAccountList()
     {
         $data = [];
 
-        $members = Member::get();
+        $members = Member::all();
         foreach ($members as $member) {
-            $data[] = $member->proto_username;
+            if ($member->proto_username) {
+                $data[] = $member->proto_username;
+            }
         }
 
         foreach (config('proto.additional_mailboxes') as $additional) {
@@ -202,23 +140,32 @@ class DirectAdminSync extends Command
         return $data;
     }
 
-    private function constructPatchList($current, $target)
+    /**
+     * Construct a patch list of forwarders from the target list.
+     *
+     * @param array $current The current list of forwarders
+     * @param array $target The target list of forwarders
+     * @return array A forwarders patch list containing an 'add', 'mod' and 'del' array
+     */
+    private function constructForwarderPatchList($current, $target)
     {
         $data = [
             'add' => [],
             'mod' => [],
-            'del' => []
+            'del' => [],
         ];
 
         // For each current forwarder, we check if it should exist against the target list.
         foreach ($current as $alias => $destination) {
+            $alias = strtolower(str_replace('_', '.', $alias));
+            $destination = explode(',', $destination);
 
             // It should exist, now we check if the forwarder needs to be rewritten.
             if (array_key_exists($alias, $target)) {
 
                 // If one target destination is not currently present, rewrite whole forwarder.
                 foreach ($target[$alias] as $d) {
-                    if (!in_array($d, $destination)) {
+                    if (! in_array($d, $destination)) {
                         $data['mod'][$alias] = $target[$alias];
                         break;
                     }
@@ -226,142 +173,171 @@ class DirectAdminSync extends Command
 
                 // If one current destination should not be present, rewrite whole forwarder.
                 foreach ($destination as $d) {
-                    if (!in_array($d, $target[$alias])) {
+                    if (! in_array($d, $target[$alias])) {
                         $data['mod'][$alias] = $target[$alias];
                         break;
                     }
                 }
 
                 // Otherwise, we do not modify this alias.
-
-            } else {
-                // The forwarder should not exist according to the target list. Remove the forwarder.
+            }
+            // Remove the forwarder because it does not exist according to the target list.
+            else {
                 $data['del'][] = $alias;
             }
         }
 
-        // Now we check if we need to create any new forwarder.
+        // Now we check if we need to create any new forwarders.
         foreach ($target as $alias => $destination) {
-
-            // A forwarder does not yet exist...
-            if (!array_key_exists($alias, $current)) {
+            $alias = strtolower(str_replace('.', '_', $alias));
+            if (! array_key_exists($alias, $current)) {
+                // The forwarder does not yet exist...
                 $data['add'][$alias] = $destination;
             }
-
         }
 
         return $data;
     }
 
+    /**
+     * Generate queries to apply the forwarders patch lists.
+     *
+     * @param array $patch The forwarders patch list containing a 'add' and 'del' array.
+     * @return array A list of queries to apply the forwarders patch
+     */
+    private function applyForwarderPatchList($patch)
+    {
+        $queries = [];
+
+        foreach ($patch['add'] as $alias => $destination) {
+            $queries[] = [
+                'cmd' => '/CMD_API_EMAIL_FORWARDERS',
+                'options' => [
+                    'domain' => getenv('DA_DOMAIN'),
+                    'action' => 'create',
+                    'user' => $alias,
+                    'email' => implode(',', $destination),
+                ],
+            ];
+        }
+
+        foreach ($patch['mod'] as $alias => $destination) {
+            $queries[] = [
+                'cmd' => '/CMD_API_EMAIL_FORWARDERS',
+                'options' => [
+                    'domain' => getenv('DA_DOMAIN'),
+                    'action' => 'modify',
+                    'user' => $alias,
+                    'email' => implode(',', $destination),
+                ],
+            ];
+        }
+
+        foreach ($patch['del'] as $del) {
+            $queries[] = [
+                'cmd' => '/CMD_API_EMAIL_FORWARDERS',
+                'options' => [
+                    'domain' => getenv('DA_DOMAIN'),
+                    'action' => 'delete',
+                    'select0' => $del,
+                ],
+            ];
+        }
+
+        return $queries;
+    }
+
+    /**
+     * Construct a patch list of accounts from the target list.
+     *
+     * @param array $current The current list of accounts
+     * @param array $target The target list of accounts
+     * @return array An accounts patch list containing an 'add' and 'del' array
+     */
     private function constructAccountPatchList($current, $target)
     {
         $data = [
             'add' => [],
-            'del' => []
+            'del' => [],
         ];
 
         // For each current account, we check if it should exist against the target list.
         foreach ($current as $account) {
 
             // The account should not exist!
-            if (!in_array($account, $target)) {
+            if (! in_array($account, $target)) {
                 $data['del'][] = $account;
             }
-
         }
 
         // Now we check if we need to create any new accounts.
         foreach ($target as $account) {
 
             // The account should be created!
-            if (!in_array($account, $current)) {
+            if (! in_array($account, $current)) {
                 $data['add'][] = $account;
             }
-
         }
 
         return $data;
     }
 
-    private function applyPatchList($patch)
-    {
-
-        $queries = [];
-
-        foreach ($patch['add'] as $alias => $destination) {
-            $queries[] = $this->constructQuery('CMD_API_EMAIL_FORWARDERS', [
-                'domain' => getenv('DA_DOMAIN'),
-                'action' => 'create',
-                'user' => $alias,
-                'email' => implode(',', $destination)
-            ]);
-        }
-
-        foreach ($patch['mod'] as $alias => $destination) {
-            $queries[] = $this->constructQuery('CMD_API_EMAIL_FORWARDERS', [
-                'domain' => getenv('DA_DOMAIN'),
-                'action' => 'modify',
-                'user' => $alias,
-                'email' => implode(',', $destination)
-            ]);
-        }
-
-        foreach ($patch['del'] as $del) {
-            $queries[] = $this->constructQuery('CMD_API_EMAIL_FORWARDERS', [
-                'domain' => getenv('DA_DOMAIN'),
-                'action' => 'delete',
-                'select0' => $del,
-            ]);
-        }
-
-        return $queries;
-
-    }
-
+    /**
+     * Generate queries to apply the accounts patch lists.
+     *
+     * @param array $patch The accounts patch list containing a 'add' and 'del' array.
+     * @return array A list of queries to apply the accounts patch
+     */
     private function applyAccountPatchList($patch)
     {
         $queries = [];
 
         foreach ($patch['add'] as $account) {
-            $password = Str::random(32);
-            $queries[] = $this->constructQuery('CMD_API_POP', [
-                'domain' => getenv('DA_DOMAIN'),
-                'action' => 'create',
-                'user' => $account,
-                'passwd' => $password,
-                'passwd2' => $password,
-                'quota' => 0, # Unlimited
-                'limit' => 0 # Unlimited
-            ]);
+            $password = str_random(32);
+            $queries[] = [
+                'cmd' => '/CMD_API_POP',
+                'options' => [
+                    'domain' => getenv('DA_DOMAIN'),
+                    'action' => 'create',
+                    'user' => $account,
+                    'passwd' => $password,
+                    'passwd2' => $password,
+                    'quota' => 0, // Unlimited
+                    'limit' => 0, // Unlimited
+                ],
+            ];
         }
 
         foreach ($patch['del'] as $account) {
-            $queries[] = $this->constructQuery('CMD_API_POP', [
-                'domain' => getenv('DA_DOMAIN'),
-                'action' => 'delete',
-                'user' => $account,
-            ]);
+            $queries[] = [
+                'cmd' => '/CMD_API_POP',
+                'options' => [
+                    'domain' => getenv('DA_DOMAIN'),
+                    'action' => 'delete',
+                    'user' => $account,
+                ],
+            ];
         }
 
         return $queries;
-
     }
 
+    /**
+     * Execute a list of DirectAdmin queries.
+     *
+     * @param DirectAdmin $da The DirectAdmin instance
+     * @param array $queries An array containing a 'cmd' and 'options' array
+     */
     private function executeQueries($da, $queries)
     {
         foreach ($queries as $i => $query) {
+            //$this->info('Query '.$i.'/'.count($queries).': '.$query['cmd'].implode($query['options'])); //Temporarily disabled to reduce Sentry spam
+            $da->query($query['cmd'], $query['options']);
 
-            $this->info('Query ' . $i . '/' . count($queries) . ': ' . $query);
-
-            $da->set_method('get');
-            $da->query($query);
-
-            $response = $this->decodeResponse($da->fetch_body());
-            if ($response['error'] == 1) {
-                $this->info('Error: ' . $response['text'] . PHP_EOL);
+            $response = $da->fetch_parsed_body();
+            if (array_key_exists('error', $response) && $response['error'] == 1) {
+                $this->info('Error: '.$response['text'].', '.$response['details'].'!'.PHP_EOL);
             }
-
         }
-
     }
 }

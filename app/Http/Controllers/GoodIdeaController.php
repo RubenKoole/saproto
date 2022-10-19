@@ -2,7 +2,10 @@
 
 namespace Proto\Http\Controllers;
 
-use Carbon\Carbon;
+use Carbon;
+use Exception;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -23,7 +26,6 @@ class GoodIdeaController extends Controller
     public function index(int $page = 1) {
         $goodIdeas = GoodIdea::orderBy('created_at', 'desc');
         return view('goodideaboard.index', ['data' => $goodIdeas->paginate(20)]);
-    }
 
     /**
      * @param int $page
@@ -43,11 +45,11 @@ class GoodIdeaController extends Controller
      * @return mixed
      */
     public function add(Request $request) {
-        $temp = nl2br(trim($request->input('idea')));
-        $new = ['idea' => $temp, 'user_id' => Auth::id()];
-        $idea = new GoodIdea($new);
-        $idea->save();
-        Session::flash('flash_message', 'Idea added.');
+     * @return View
+     */
+    public function index($page = 1)
+    {
+        $goodIdeas = GoodIdea::where('updated_at', '>', Carbon::now()->subWeeks(4));
         return Redirect::back();
     }
 
@@ -129,7 +131,7 @@ class GoodIdeaController extends Controller
      */
     public function archiveAll() {
         $ideas = GoodIdea::all();
-        foreach($ideas as $idea) {
+        foreach ($ideas as $idea) {
             $idea->delete();
         }
         return Redirect::route('goodideas::archived');
@@ -141,10 +143,13 @@ class GoodIdeaController extends Controller
      */
     public function vote(Request $request) {
         $idea = GoodIdea::findOrFail($request->input('id'));
+
+        /** @var GoodIdeaVote $vote */
         $vote = GoodIdeaVote::firstOrCreate(['user_id' => Auth::id(), 'good_idea_id' => $request->input('id')]);
         $value = $request->input('voteValue');
         $vote->vote = in_array($value, [-1, 0, 1]) ? $value : 0;
         $vote->save();
+
         return response()->json(['voteScore' => $idea->voteScore(), 'userVote' => $idea->userVote(Auth::user())]);
     }
 }

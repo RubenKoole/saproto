@@ -2,46 +2,57 @@
 
 namespace Proto\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Carbon\Carbon;
-
 use Auth;
+use Carbon;
+use DB;
+use Exception;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Proto\Models\Activity;
 use Proto\Models\FailedWithdrawal;
 use Proto\Models\OrderLine;
 use Proto\Models\Product;
 use Proto\Models\TicketPurchase;
 use Proto\Models\User;
-
 use Redirect;
-use DB;
+use Session;
 
 class OrderLineController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * @param string $date
+     * @return View
      */
     public function index($date = null)
     {
-
         $user = Auth::user();
 
-        $next_withdrawal = $orderlines = OrderLine::where('user_id', $user->id)->whereNull('payed_with_cash')->whereNull('payed_with_bank_card')->whereNull('payed_with_mollie')->whereNull('payed_with_withdrawal')->sum('total_price');
+        $next_withdrawal = OrderLine::query()
+            ->where('user_id', $user->id)
+            ->whereNull('payed_with_cash')
+            ->whereNull('payed_with_bank_card')
+            ->whereNull('payed_with_mollie')
+            ->whereNull('payed_with_withdrawal')
+            ->sum('total_price');
 
-        $orderlines = OrderLine::where('user_id', $user->id)->orderBy('created_at', 'desc')->get()->groupBy(function ($date) {
-            return Carbon::parse($date->created_at)->format('Y-m');
-        });
+        $orderlines = OrderLine::query()
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->with('product')
+            ->get()
+            ->groupBy(function ($date) {
+                return Carbon::parse($date->created_at)->format('Y-m');
+            });
 
-        if ($date != null) {
-            $selected_month = $date;
-        } else {
-            $selected_month = date('Y-m');
+        $selected_month = $date ?? date('Y-m');
+
+        $available_months = [];
+        foreach($orderlines->keys() as $month) {
+            $month = Carbon::parse($month);
+            $available_months[$month->year][] = $month->month;
         }
-
-        $available_months = $orderlines->keys()->groupBy(function ($date) {
-            return Carbon::parse($date)->format('Y');
-        });
 
         $total = 0;
         if ($orderlines->has($selected_month)) {
@@ -53,73 +64,113 @@ class OrderLineController extends Controller
             }
         }
 
+        $outstanding = Activity::whereHas('users', function (Builder $query) {
+            $query->where('user_id', Auth::user()->id);
+        })->where('closed', false)->sum('price');
+
+
+        $payment_methods = MollieController::getPaymentMethods();
         return view('omnomcom.orders.myhistory', [
             'user' => $user,
             'available_months' => $available_months,
             'selected_month' => $selected_month,
-            'orderlines' => ($orderlines->has($selected_month) ? $orderlines[$selected_month] : []),
+            'orderlines' => $orderlines->has($selected_month) ? $orderlines[$selected_month] : [],
             'next_withdrawal' => $next_withdrawal,
-            'total' => $total
+            'total' => $total,
+            'methods' => $payment_methods ?? [],
+            'use_fees' => config('omnomcom.mollie')['use_fees'],
+            'outstanding' => $outstanding,
         ]);
-
     }
 
     /**
      * @param Request $request
-     * @param null $date
-     * @return \Illuminate\Http\RedirectResponse
+     * @return View
      */
-    public function adminindex(Request $request, $date = null)
+    public function adminindex(Request $request)
     {
-
-        if ($request->has('date')) {
-            return Redirect::route('omnomcom::orders::adminlist', ['date' => $request->get('date')]);
-        }
-
-        $date = ($date ? $date : date('Y-m-d'));
-
-        if (Auth::user()->can('alfred')) {
+        if (Auth::user()->can('alfred') && ! Auth::user()->hasRole('sysadmin')) {
             $orderlines = OrderLine::whereHas('product', function ($query) {
                 $query->where('account_id', '=', config('omnomcom.alfred-account'));
-            })->where('created_at', '>=', ($date ? Carbon::parse($date)->format('Y-m-d H:i:s') : Carbon::today()->format('Y-m-d H:i:s')));
+            })->whereDate('created_at', (Carbon::today()));
         } else {
-            $orderlines = OrderLine::where('created_at', '>=', ($date ? Carbon::parse($date)->format('Y-m-d H:i:s') : Carbon::today()->format('Y-m-d H:i:s')));
+            $orderlines = OrderLine::whereDate('created_at',  Carbon::today());
         }
-
-        if ($date != null) {
-            $orderlines = $orderlines->where('created_at', '<=', Carbon::parse($date . ' 23:59:59')->format('Y-m-d H:i:s'));
-        }
-
         $orderlines = $orderlines->orderBy('created_at', 'desc')->paginate(20);
 
         return view('omnomcom.orders.adminhistory', [
-            'date' => $date,
-            'orderlines' => ($orderlines ? $orderlines : [])
+            'date' => Carbon::today()->format('d-m-Y'),
+            'orderlines' => $orderlines,
+            'user' =>null,
         ]);
-
     }
 
     /**
-     * Bulk store a newly created resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return View
+     */
+    public function filterByDate(Request $request)
+    {
+        $date = Carbon::parse($request->input('date'))->format('d-m-Y');
+
+        if (Auth::user()->can('alfred') && ! Auth::user()->hasRole('sysadmin')) {
+            $orderlines = OrderLine::whereHas('product', function ($query) {
+                $query->where('account_id', '=', config('omnomcom.alfred-account'));
+            })->whereDate('created_at', Carbon::parse($date));
+        } else {
+                $orderlines = OrderLine::whereDate('created_at', Carbon::parse($date));
+        }
+
+        $orderlines = $orderlines->orderBy('created_at', 'desc')->paginate(20)->appends(['date'=>$date]);
+
+        return view('omnomcom.orders.adminhistory', [
+            'date' => $date,
+            'orderlines' => $orderlines,
+            'user' => null,
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @return View|RedirectResponse
+     */
+    public function filterByUser(Request $request)
+    {
+        $user = $request->input('user');
+
+        if (Auth::user()->can('alfred') && ! Auth::user()->hasRole('sysadmin')) {
+            $orderlines = OrderLine::whereHas('product', function ($query) {
+                $query->where('account_id', '=', config('omnomcom.alfred-account'));
+            })->where('user_id', $user);
+        } else {
+            $orderlines = OrderLine::where('user_id', $user);
+        }
+
+        $orderlines = $orderlines->orderBy('created_at', 'desc')->paginate(20)->appends(['user'=>$user]);
+
+        return view('omnomcom.orders.adminhistory', [
+            'date' => null,
+            'user' => User::findOrFail($user)->name,
+            'orderlines' => $orderlines,
+        ]);
+    }
+
+    /**
+     * @param Request $request
+     * @return RedirectResponse
      */
     public function bulkStore(Request $request)
     {
-
         for ($i = 0; $i < count($request->input('user')); $i++) {
-
-            $user = User::findOrFail($request->input('user')[$i]);
+            /** @var Product $product */
             $product = Product::findOrFail($request->input('product')[$i]);
-            $price = ($request->input('price')[$i] != "" ? floatval(str_replace(",", ".", $request->input('price')[$i])) : $product->price);
+            $user = User::findOrFail($request->input('user')[$i]);
+            $price = ($request->input('price')[$i] != '' ? floatval(str_replace(',', '.', $request->input('price')[$i])) : $product->price);
             $units = $request->input('units')[$i];
-
             $product->buyForUser($user, $units, $price * $units, null, null, $request->input('description'), sprintf('bulk_add_by_%u', Auth::user()->id));
-
         }
 
-        $request->session()->flash('flash_message', 'Your manual orders have been added.');
+        Session::flash('flash_message', 'Your manual orders have been added.');
         return Redirect::back();
     }
 
@@ -127,39 +178,36 @@ class OrderLineController extends Controller
      * Store (a) simple orderline(s).
      *
      * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return RedirectResponse
      */
     public function store(Request $request)
     {
-
         for ($u = 0; $u < count($request->input('user')); $u++) {
             for ($p = 0; $p < count($request->input('product')); $p++) {
-
                 $user = User::findOrFail($request->input('user')[$u]);
                 $product = Product::findOrFail($request->input('product')[$p]);
 
                 $product->buyForUser($user, 1, null, null, null, null, sprintf('simple_add_by_%u', Auth::user()->id));
-
             }
         }
 
-        $request->session()->flash('flash_message', 'Your manual orders have been added.');
+        Session::flash('flash_message', 'Your manual orders have been added.');
         return Redirect::back();
-
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
+     * @param Request $request
      * @param int $id
-     * @return \Illuminate\Http\Response
+     * @return RedirectResponse
+     * @throws Exception
      */
     public function destroy(Request $request, $id)
     {
+        /** @var OrderLine $order */
         $order = OrderLine::findOrFail($id);
 
-        if (!$order->canBeDeleted()) {
-            $request->session()->flash('flash_message', 'The orderline cannot be deleted.');
+        if (! $order->canBeDeleted()) {
+            Session::flash('flash_message', 'The orderline cannot be deleted.');
             return Redirect::back();
         }
 
@@ -171,31 +219,39 @@ class OrderLineController extends Controller
 
         $order->delete();
 
-        $request->session()->flash('flash_message', 'The orderline was deleted.');
+        Session::flash('flash_message', 'The orderline was deleted.');
         return Redirect::back();
     }
-
 
     /**
      * Display aggregated payment totals for cash and card payments to check the financial administration.
      *
      * @param Request $request
-     * @return \Illuminate\Http\Response
+     * @return View
      */
     public function showPaymentStatistics(Request $request)
     {
         if ($request->has('start') && $request->has('end')) {
             $start = date('Y-m-d H:i:s', strtotime($request->start));
             $end = date('Y-m-d H:i:s', strtotime($request->end));
-            $total_cash = DB::table('orderlines')->where('created_at', '>', $start)->where('created_at', '<', $end)
-                ->whereNotNull('payed_with_cash')->select(DB::raw('SUM(total_price) as total'))->get()[0]->total;
-            $total_card = DB::table('orderlines')->where('created_at', '>', $start)->where('created_at', '<', $end)
-                ->whereNotNull('payed_with_bank_card')->select(DB::raw('SUM(total_price) as total'))->get()[0]->total;
+            $total_cash = DB::table('orderlines')
+                ->where('created_at', '>', $start)
+                ->where('created_at', '<', $end)
+                ->whereNotNull('payed_with_cash')
+                ->select(DB::raw('SUM(total_price) as total'))
+                ->get()[0]->total;
+            $total_card = DB::table('orderlines')
+                ->where('created_at', '>', $start)
+                ->where('created_at', '<', $end)
+                ->whereNotNull('payed_with_bank_card')
+                ->select(DB::raw('SUM(total_price) as total'))
+                ->get()[0]->total;
+
             return view('omnomcom.statistics.payments', [
                 'start' => $request->start,
                 'end' => $request->end,
                 'total_cash' => $total_cash,
-                'total_card' => $total_card
+                'total_card' => $total_card,
             ]);
         } else {
             return view('omnomcom.statistics.date-select', ['select_text' => 'Select a time range over which to calculate payment totals.']);

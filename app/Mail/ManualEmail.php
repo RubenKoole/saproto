@@ -5,11 +5,11 @@ namespace Proto\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ManualEmail extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public $from;
     public $subject;
@@ -17,7 +17,7 @@ class ManualEmail extends Mailable
     public $submitted_attachments;
     public $destination;
     public $user_id;
-    public $event_name;
+    public $events;
     public $email_id;
 
     /**
@@ -25,7 +25,7 @@ class ManualEmail extends Mailable
      *
      * @return void
      */
-    public function __construct($from, $subject, $body, $attachments, $destination, $user_id, $event_name, $email_id)
+    public function __construct($from, $subject, $body, $attachments, $destination, $user_id, $events, $email_id)
     {
         $this->from = $from;
         $this->subject = $subject;
@@ -33,7 +33,7 @@ class ManualEmail extends Mailable
         $this->submitted_attachments = $attachments;
         $this->destination = $destination;
         $this->user_id = $user_id;
-        $this->event_name = $event_name;
+        $this->events = $events;
         $this->email_id = $email_id;
     }
 
@@ -50,7 +50,7 @@ class ManualEmail extends Mailable
         foreach ($this->submitted_attachments as $attachment) {
             $options = [
                 'as' => $attachment->original_filename,
-                'mime' => $attachment->mime
+                'mime' => $attachment->mime,
             ];
             $mail->attach($attachment->generateLocalPath(), $options);
         }

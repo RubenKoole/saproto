@@ -1,11 +1,16 @@
 <div class="card">
 
     <div class="card-header bg-dark text-white">
-        Orderlines on {{ $date }}
+        @if($date)
+            Orderlines on {{ $date }}
+        @elseif($user)
+            Orderlines for {{ $user }}
+        @endif
     </div>
 
     @if(count($orderlines) > 0)
 
+        <div class="table-responsive">
         <table class="table table-hover table-sm">
 
             <tbody>
@@ -15,17 +20,22 @@
                     <td>
                         <span class="text-muted">{{ $orderline->id }}</span>
                         @if($orderline->canBeDeleted())
-                            <a href="{{ route('omnomcom::orders::delete', ['id' => $orderline->id]) }}"
-                               onclick="javascript:return confirm('You are about to delete an orderline for {{  $orderline->user->name }}. Are you sure? ');">
-                                <i class="fas fa-trash ml-3 text-danger" aria-hidden="true"></i>
-                            </a>
+                            @include('website.layouts.macros.confirm-modal', [
+                                'action' => route('omnomcom::orders::delete', ['id' => $orderline->id]),
+                                'text' => '<i class="fas fa-trash text-danger ms-3"></i>',
+                                'title' => 'Confirm Delete',
+                                'message' => 'Are you sure you want to delete this orderline for '.$orderline->user->name.'?',
+                                'confirm' => 'Delete',
+                            ])
                         @endif
                     </td>
-                    <td class="text-right">
+                    <td class="text-end" style="min-width:70px">
                         &euro; {{ number_format($orderline->total_price, 2, '.', '') }}
                     </td>
                     <td>
-                        <span class="text-muted mr-2">{{ $orderline->units }}x</span>
+                        <span class="text-muted me-2">{{ $orderline->units }}x</span>
+                    </td>
+                    <td style="min-width:150px">
                         {{ $orderline->product->name }}
                     </td>
                     <td>
@@ -57,6 +67,7 @@
             </tbody>
 
         </table>
+        </div>
 
         @if(method_exists($orderlines, 'links'))
             <div class="card-footer pb-0">
@@ -67,7 +78,7 @@
     @else
         <div class="card-body">
             <p class="text-center mt-3">
-                No orderlines for this date.
+                No orderlines for this {{($date?'date':'user')}}.
             </p>
         </div>
     @endif

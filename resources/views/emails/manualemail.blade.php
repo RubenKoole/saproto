@@ -16,10 +16,13 @@
         <sub>
             @if($destination == 'list')
                 You receive this e-mail because you are subscribed to one or more of the following e-mail lists:
-                {!! Email::getListUnsubscribeFooter($user_id, $email_id) !!}.
-            @elseif($destination == 'event')
+                {!! Proto\Models\Email::getListUnsubscribeFooter($user_id, $email_id) !!}.
+            @elseif($destination == 'event' || $destination=='event with backup')
                 You receive this e-mail because you signed up for any of the following events as a participant, helper
-                or by buying a ticket: {{ $event_name }}.
+                or by buying a ticket {{$destination=='event with backup'?'or you are on the backuplist':''}}:
+                @foreach($events as $event)
+                <br><a href="{{route('event::show', ['id' => $event->getPublicId()])}}"> {{$event->title}} </a>
+                @endforeach
             @elseif($destination == 'users')
                 You receive this e-mail because you have an active user account at the website of S.A. Proto.
             @elseif($destination == 'members')

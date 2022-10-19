@@ -15,7 +15,7 @@
 
         </div>
 
-        <div class="col-md-8 col-md-pull-4">
+        <div class="col-md-8 col-md-4">
 
             @include('quotecorner.allquotes')
 
@@ -25,41 +25,36 @@
 
 @endsection
 
-@section('javascript')
+@push('javascript')
 
-    @parent
+    <script type="text/javascript" nonce="{{ csp_nonce() }}">
 
-    <script>
+        likeBtnList = Array.from(document.getElementsByClassName('qq_like'))
+        likeBtnList.forEach(el => {
+            el.addEventListener('click', _ => {
+                const id = el.getAttribute('data-id')
+                if (id === undefined) return
 
-        $(".qq_like i").click(function (event) {
-
-            var id = $(event.target).parent().attr('data-id');
-
-            if (id === undefined) { return; }
-
-            $.ajax({
-                type: "GET",
-                url: '{{ route('quotes::like', ['id' => 'qid']) }}'.replace('qid', id),
-                success: function () {
-
-                    if ($(event.target).hasClass('fas')) {
-                        $(event.target).next().html(parseInt($(event.target).next().html())-1);
-                    } else {
-                        $(event.target).next().html(parseInt($(event.target).next().html())+1);
+               get('{{ route('quotes::like', ['id' => ':id']) }}'.replace(':id', id), null, {parse: false})
+                .then(_ => {
+                    const icon = el.children[0]
+                    const likes = el.children[1]
+                    if (icon.classList.contains('fas')) {
+                        likes.innerHTML = `${parseInt(likes.innerHTML) - 1}`
+                        icon.classList.replace('fas', 'far')
                     }
-
-                    $(event.target).toggleClass('fas').toggleClass('far');
-
-                },
-                error: function () {
-
-                    window.alert('Something went wrong liking the quote. Please try again.');
-
-                }
-            });
-
-        });
+                    else {
+                        likes.innerHTML = `${parseInt(likes.innerHTML) + 1}`
+                        icon.classList.replace('far', 'fas')
+                    }
+                })
+                .catch(err => {
+                    console.error(err)
+                    window.alert('Something went wrong liking the quote. Please try again.')
+                })
+            })
+        })
 
     </script>
 
-@endsection
+@endpush

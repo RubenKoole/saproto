@@ -2,13 +2,29 @@ version: '3'
 services:
   app:
     build: ./docker/build/php
-    container_name: saproto-app
+    container_name: ${DOCKER_NAME}-app
+    volumes:
+      - .:/var/www
+
+  queue:
+    build: ./docker/build/php
+    container_name: ${DOCKER_NAME}-queue
+    command:
+      "/bin/bash -c 'php /var/www/artisan queue:work --verbose --tries=3 --timeout=90 --queue=low,medium,high'"
+    volumes:
+      - .:/var/www
+
+  schedule:
+    build: ./docker/build/php
+    container_name: ${DOCKER_NAME}-schedule
+    command:
+      "/bin/bash -c 'while true; do php /var/www/artisan schedule:run --verbose --no-interaction & sleep 60; done'"
     volumes:
       - .:/var/www
 
   mariadb:
     image: mariadb:latest
-    container_name: saproto-mariadb
+    container_name: ${DOCKER_NAME}-mariadb
     environment:
       - MYSQL_ROOT_PASSWORD=thisisareallystrongpassword123
       - MYSQL_DATABASE=${DB_DATABASE}
@@ -19,16 +35,19 @@ services:
 
   nginx:
     build: ./docker/build/nginx
-    container_name: saproto-nginx
+    container_name: ${DOCKER_NAME}-nginx
     ports:
       - 127.0.0.1:${DOCKER_HTTP_PORT}:443
     volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/nginx/nginx.conf:/etc/nginx/templates/nginx.conf.template
       - ./docker/nginx-log:/var/log/nginx
       - .:/var/www
+    environment:
+      - NGINX_HTTP_PORT=${DOCKER_HTTP_PORT}
+      - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx/
 
   phpmyadmin:
-    container_name: saproto-pma
+    container_name: ${DOCKER_NAME}-pma
     image: phpmyadmin/phpmyadmin:4.8
     ports:
       - 127.0.0.1:${DOCKER_PMA_PORT}:80
@@ -36,7 +55,7 @@ services:
       - PMA_HOST=mariadb
 
   mailhog:
-    container_name: saproto-mailhog
+    container_name: ${DOCKER_NAME}-mailhog
     image: mailhog/mailhog
     ports:
       - 127.0.0.1:${DOCKER_MAILHOG_PORT}:8025

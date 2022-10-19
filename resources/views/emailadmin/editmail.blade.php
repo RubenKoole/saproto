@@ -10,7 +10,7 @@
 
         <div class="col-md-6">
 
-            @include('emailadmin.admin_includes.email-edit')
+            @include('emailadmin.admin_includes.email-details')
 
         </div>
 
@@ -25,35 +25,5 @@
         </div>
 
     </div>
-
-@endsection
-
-@section('javascript')
-
-    @parent
-
-    <script type="text/javascript">
-
-        $("#destinationEvent").click(function () {
-            $("#listSelect").prop('disabled', true);
-            $("#eventSelect").prop('disabled', false);
-        });
-        $("#destinationLists").click(function () {
-            $("#listSelect").prop('disabled', false);
-            $("#eventSelect").prop('disabled', true);
-        });
-        $("#destinationMembers").click(function () {
-            $("#listSelect").prop('disabled', true);
-            $("#eventSelect").prop('disabled', true);
-        });
-        $("#destinationUsers").click(function () {
-            $("#listSelect").prop('disabled', true);
-            $("#eventSelect").prop('disabled', true);
-        });
-        $("#destinationActiveMembers").click(function () {
-            $("#listSelect").prop('disabled', true);
-            $("#eventSelect").prop('disabled', true);
-        });
-    </script>
 
 @endsection

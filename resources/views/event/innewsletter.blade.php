@@ -25,13 +25,13 @@
 
                         <p class="card-text text-center">
                             The newsletter was last sent
-                            <strong>{{ Carbon::createFromFormat('U', Newsletter::lastSent())->diffForHumans() }}</strong>
+                            <strong>{{ Proto\Models\Newsletter::sentAt()->diffForHumans() }}</strong>
                         </p>
 
-                        <input type="button" class="btn btn-success btn-block" data-toggle="modal"
-                               data-target="#sendnewsletter"
-                               value="{{ (Newsletter::canBeSent() ? 'Send the weekly newsletter!' : 'Weekly newsletter can not be sent right now.') }}"
-                                {{ (!Newsletter::canBeSent() ? 'disabled' : '') }}>
+                        <button class="btn {{ Proto\Models\Newsletter::lastSentMoreThanWeekAgo() ? "btn-success" : "btn-danger" }} btn-block"
+                                data-bs-toggle="modal" data-bs-target="#sendnewsletter" type="button">
+                            {{ (Proto\Models\Newsletter::lastSentMoreThanWeekAgo() ? 'Send the weekly newsletter!': 'Newsletter already sent this week!') }}
+                        </button>
 
                         <hr>
 
@@ -40,14 +40,14 @@
                             @include('website.layouts.macros.markdownfield', [
                                 'name' => 'text',
                                 'placeholder' => 'Text goes here.',
-                                'value' => Newsletter::getText()->value
+                                'value' => Proto\Models\Newsletter::text()
                             ])
                         </div>
 
                     </div>
 
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-success pull-right">Save text</button>
+                        <button type="submit" class="btn btn-success float-end">Save text</button>
                         <a class="btn btn-default" target="_blank"
                            href="{{ route("newsletter::preview") }}">
                             Preview
@@ -87,7 +87,7 @@
 
                         @foreach($events as $event)
 
-                            <tr style="opacity: {{ ($event->include_in_newsletter ? '1' : '0.4') }};">
+                            <tr class="{{ $event->include_in_newsletter ? '' : 'opacity-50' }}">
 
                                 <td>{{ $event->title }}</td>
                                 <td>{{ $event->generateTimespanText('l j F, H:i', 'H:i', '-') }}</td>
@@ -123,30 +123,37 @@
 
     </div>
 
-    @if(Newsletter::canBeSent())
-        <div id="sendnewsletter" class="modal fade" tabindex="-1" role="dialog">
-            <div class="modal-dialog modal-sm " role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Send the newsletter?</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        Are you SURE you want to send the newsletter? You can only send the newsletter once per week!
-                    </div>
-                    <div class="modal-footer">
-                        <form method="post" action="{{ route('newsletter::send') }}">
-                            {!! csrf_field() !!}
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                            <button type="submit" class="btn btn-success">Send</button>
-                        </form>
-                    </div>
-
+    <div id="sendnewsletter" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-sm " role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Send the newsletter?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
+                <div class="modal-body">
+                    <p>
+                        The newsletter was last sent: <br>
+                        <strong>
+                            {{ Proto\Models\Newsletter::sentAt()->diffForHumans() }}
+                        </strong>
+                    </p>
+                    <p>
+                        Are you SURE you want to send the newsletter? You should only send the newsletter once per week!
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <form method="post" action="{{ route('newsletter::send') }}">
+                        {!! csrf_field() !!}
+                        <button type="button" class="btn btn-default" data-bs-dismiss="modal">Close</button>
+                        <button type="submit"
+                                class="btn {{ Proto\Models\Newsletter::lastSentMoreThanWeekAgo() ? "btn-success" : "btn-danger" }}">
+                            Send
+                        </button>
+                    </form>
+                </div>
+
             </div>
         </div>
-    @endif
+    </div>
 
 @endsection

@@ -14,55 +14,62 @@
 
                 <div class="card-header bg-dark text-white mb-1">
                     @yield('page-title')
-                    <a href="{{ route('omnomcom::accounts::add') }}" class="badge badge-info float-right">
+                    <a href="{{ route('omnomcom::accounts::add') }}" class="badge bg-info float-end">
                         Create a new account.
                     </a>
                 </div>
 
-                <table class="table table-hover table-sm">
+                <div class="table-responsive">
 
-                    <thead>
+                    <table class="table table-hover table-sm">
 
-                    <tr class="bg-dark text-white">
+                        <thead>
 
-                        <td>Name</td>
-                        <td>Acc. Number</td>
-                        <td>Associated Prod.</td>
-                        <td></td>
+                            <tr class="bg-dark text-white">
+                                <td>Name</td>
+                                <td>Acc. Number</td>
+                                <td>Associated Prod.</td>
+                                <td></td>
 
-                    </tr>
+                            </tr>
 
-                    </thead>
+                        </thead>
 
-                    @foreach($accounts as $account)
+                        <tbody>
 
-                        <tr>
+                            @foreach($accounts as $account)
 
-                            <td>
-                                <a href="{{ route('omnomcom::accounts::show', ['id' => $account->id]) }}">
-                                    {{ $account->name }}
-                                </a>
-                            </td>
-                            <td>
-                                {{ $account->account_number }}
-                            </td>
-                            <td>
-                                {{ $account->products->count() }}
-                            </td>
-                            <td>
-                                <a href="{{ route('omnomcom::accounts::edit', ['id' => $account->id]) }}">
-                                    <i class="fas fa-edit mr-2"></i>
-                                </a>
-                                <a href="{{ route('omnomcom::accounts::delete', ['id' => $account->id]) }}">
-                                    <i class="fas fa-trash text-danger"></i>
-                                </a>
-                            </td>
+                                <tr>
 
-                        </tr>
+                                    <td>
+                                        <a href="{{ route('omnomcom::accounts::show', ['id' => $account->id]) }}">
+                                            {{ $account->name }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {{ $account->account_number }}
+                                    </td>
+                                    <td>
+                                        {{ $account->products->count() }}
+                                    </td>
+                                    <td style="min-width:60px">
+                                        <a href="{{ route('omnomcom::accounts::edit', ['id' => $account->id]) }}">
+                                            <i class="fas fa-edit me-2"></i>
+                                        </a>
+                                        <a href="{{ route('omnomcom::accounts::delete', ['id' => $account->id]) }}">
+                                            <i class="fas fa-trash text-danger"></i>
+                                        </a>
+                                    </td>
 
-                    @endforeach
+                                </tr>
 
-                </table>
+                            @endforeach
+
+                        </tbody>
+
+                    </table>
+
+                </div>
 
             </div>
 

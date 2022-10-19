@@ -5,12 +5,12 @@ namespace Proto\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Proto\Models\HelpingCommittee;
 
 class HelperReminder extends Mailable
 {
-    use Queueable, SerializesModels;
+    use Queueable;
+    use SerializesModels;
 
     public $committee;
     public $event;
@@ -27,7 +27,7 @@ class HelperReminder extends Mailable
         $this->help = $help;
         $this->committee = $help->committee;
         $this->event = $help->activity->event;
-        $this->helping_count = $help->getHelpingCount();
+        $this->helping_count = $help->helperCount();
     }
 
     /**
@@ -37,9 +37,8 @@ class HelperReminder extends Mailable
      */
     public function build()
     {
-
         return $this
-            ->to($this->committee->getHelperReminderSubscribers())
+            ->to($this->committee->helperReminderSubscribers())
             ->from('webmaster@proto.utwente.nl', 'S.A. Proto')
             ->subject(sprintf('Activity %s is in three days, but doesn\'t have enough helpers for the %s.', $this->event->title, $this->committee->name))
             ->view('emails.helperreminder');

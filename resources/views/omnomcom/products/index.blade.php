@@ -22,11 +22,9 @@
 
                         <div class="input-group">
                             <input type="text" class="form-control" placeholder="Search" name="search">
-                            <div class="input-group-append">
-                                <button type="submit" class="input-group-text" id="basic-addon2"><i
-                                            class="fas fa-search"></i>
-                                </button>
-                            </div>
+                            <button type="submit" class="input-group-text" id="basic-addon2">
+                                <i class="fas fa-search"></i>
+                            </button>
                         </div>
 
                     </form>
@@ -51,7 +49,7 @@
 
                 {!! csrf_field() !!}
 
-                <div class="card">
+                <div class="card mb-3">
 
                     <div class="card-header bg-dark text-white">
                         Update the stock
@@ -88,6 +86,7 @@
 
                 @if (count($products) > 0)
 
+                    <div class="table-responsive">
                     <table class="table table-hover table-sm">
 
                         <thead>
@@ -118,14 +117,17 @@
                                 <td>{{ $product->stock }}</td>
                                 <td>{{ $product->is_visible ? 'Yes' : 'No' }}</td>
                                 <td>{{ $product->is_alcoholic ? 'Yes' : 'No' }}</td>
-                                <td class="text-right">
+                                <td style="min-width: 60px">
                                     <a href="{{ route('omnomcom::products::edit', ['id' => $product->id]) }}">
-                                        <i class="fas fa-edit mr-2"></i>
+                                        <i class="fas fa-edit me-2"></i>
                                     </a>
-                                    <a onclick="return confirm('Remove product \'{{ $product->name }}\'?');"
-                                       href="{{ route('omnomcom::products::delete', ['id' => $product->id]) }}">
-                                        <i class="fas fa-trash text-danger"></i>
-                                    </a>
+                                    @include('website.layouts.macros.confirm-modal', [
+                                        'action' => route('omnomcom::products::delete', ['id' => $product->id]),
+                                        'text' => '<i class="fas fa-trash text-danger"></i>',
+                                        'title' => 'Confirm Delete',
+                                        'message' => "Are you sure you want to delete $product->name?",
+                                        'confirm' => 'Delete',
+                                    ])
                                 </td>
 
                             </tr>
@@ -135,6 +137,7 @@
                         </tbody>
 
                     </table>
+                    </div>
 
                     @if(method_exists($products, 'links'))
                         <div class="card-footer pb-0">

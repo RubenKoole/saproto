@@ -4,12 +4,10 @@
 
     <div class="card-body">
 
-        @if(Auth::user()->can('board'))
-            <a class="btn btn-{{ $user->signed_nda ? 'info' : 'warning' }} btn-block mb-3"
-               href="{{ route('user::admin::toggle_nda', ['id' => $user->id]) }}">
-                User <strong>{{ !$user->signed_nda ? 'did not sign' : 'signed' }}</strong> an NDA.
-            </a>
-        @endif
+        <a class="btn btn-{{ $user->signed_nda ? 'info' : 'warning' }} btn-block mb-3"
+           href="{{ route('user::admin::toggle_nda', ['id' => $user->id]) }}">
+            User <strong>{{ !$user->signed_nda ? 'did not sign' : 'signed' }}</strong> an NDA.
+        </a>
 
         <ul class="list-group mb-3">
 
@@ -29,18 +27,28 @@
                     Make temporary admin
                 </a>
             @endif
-            @if($user->disable_omnomcom)
-                <a href="{{ route('user::admin::unblock_omnomcom', ['id' => $user->id]) }}"
-                   class="list-group-item">
-                    Unblock OmNomCom
-                </a>
-            @endif
             @if($user->is_member)
                 <a class="list-group-item"
                    href="{{ route('user::profile', ['id' => $user->getPublicId()]) }}">
                     Go to profile
                 </a>
             @endif
+            @if($user->disable_omnomcom)
+                <a href="{{ route('user::admin::unblock_omnomcom', ['id' => $user->id]) }}"
+                   class="list-group-item text-warning">
+                    Unblock OmNomCom
+                </a>
+            @endif
+            @isset($user->tfa_totp_key)
+                @include('website.layouts.macros.confirm-modal', [
+                    'action' => route("user::2fa::admindelete", ['id'=>$user->id]),
+                    'method'=>'POST',
+                    'classes' => 'list-group-item text-danger',
+                    'text' => 'Disable 2FA',
+                    'title' => 'Confirm Disabling 2FA',
+                    'message' => 'Are you sure you want to disable the two-factor authentication of '.$user->name.' <b>Only continue if you have their consent!</b>',
+                ])
+           @endisset
 
         </ul>
 

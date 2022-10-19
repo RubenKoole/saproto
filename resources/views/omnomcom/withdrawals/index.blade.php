@@ -14,13 +14,14 @@
 
                 <div class="card-header bg-dark text-white mb-1">
                     @yield('page-title')
-                    <a href="{{ route('omnomcom::withdrawal::add') }}" class="badge badge-info float-right">
+                    <a href="{{ route('omnomcom::withdrawal::add') }}" class="badge bg-info float-end">
                         Create a new withdrawal.
                     </a>
                 </div>
 
                 @if ($withdrawals->count() > 0)
 
+                    <div class="table-responsive">
                     <table class="table table-hover">
 
                         <thead>
@@ -72,12 +73,13 @@
                         @endforeach
 
                     </table>
+                    </div>
 
                     <div class="card-footer pb-0">{{ $withdrawals->links() }}</div>
 
                 @else
 
-                    <p style="text-align: center;">
+                    <p class="text-center">
                         There are no withdrawals.
                     </p>
 

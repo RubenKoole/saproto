@@ -16,13 +16,14 @@
                     @yield('page-title')
                 </div>
 
+                <div class="table-responsive">
                 <table class="table table-hover">
 
                     <thead>
 
                     <tr class="bg-dark text-white">
 
-                        <td class="text-right">Alias</td>
+                        <td class="text-end">Alias</td>
                         <td>Destination</td>
 
                     </tr>
@@ -33,11 +34,11 @@
 
                         <tr>
 
-                            <td class="text-right">
+                            <td class="text-end">
 
                                 <strong>{{ $alias }}</strong> @ {{ config('proto.emaildomain') }}
 
-                                <a href="{{ route('alias::delete', ['idOrAlias' => $alias]) }}" class="ml-2">
+                                <a href="{{ route('alias::delete', ['id_or_alias' => $alias]) }}" class="ms-2">
                                     <i class="fas fa-trash text-danger"></i>
                                 </a>
 
@@ -46,7 +47,7 @@
 
                                 @foreach($destinations as $destination)
 
-                                    <a href="{{ route('alias::delete', ['idOrAlias' => $destination->id]) }}" class="mr-2">
+                                    <a href="{{ route('alias::delete', ['id_or_alias' => $destination->id]) }}" class="me-2">
                                         <i class="fas fa-trash text-danger"></i>
                                     </a>
 
@@ -57,7 +58,7 @@
                                             <a href="{{ route('user::profile', ['id' => $destination->user->getPublicId()]) }}">
                                                 @endif
                                                 @if($destination->user->trashed())
-                                                    <span style="text-decoration: line-through;">{{ $destination->user->name }}</span>
+                                                    <span class="text-decoration-line-through">{{ $destination->user->name }}</span>
                                                 @else
                                                     {{ $destination->user->name }}
                                                 @endif
@@ -79,6 +80,7 @@
                     @endforeach
 
                 </table>
+                </div>
 
             </div>
 
@@ -98,7 +100,7 @@
                         <a href="{{ route('alias::add') }}" class="form-control btn btn-success">Create a new alias.</a>
                     </p>
 
-                    <p style="text-align: center;">
+                    <p class="text-center">
                         - or -
                     </p>
 

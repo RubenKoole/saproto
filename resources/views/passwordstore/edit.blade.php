@@ -1,9 +1,8 @@
 @extends('website.layouts.redesign.dashboard')
 
-@section('head')
-    @parent
+@push('head')
     <meta http-equiv="refresh" content="{{ Session::get('passwordstore-verify') - time() }}">
-@endsection
+@endpush
 
 @section('page-title')
     {{ ($password ? 'Edit' : 'Add') }} {{ ($type == 'password' ? 'Password' : 'Secure Note') }}
@@ -28,16 +27,16 @@
 
                         <label>Resource description:</label>
                         <input class="form-control mb-3" type="text" name="description"
-                               value="{{ $password->description or '' }}">
+                               value="{{ $password->description ?? '' }}">
 
                         <label>Authorized users:</label>
                         <select name="permission_id" class="form-control mb-3" required>
                             @foreach(Permission::all() as $permission)
-                                @if(Auth::user()->can($permission->name))
+                                @can($permission->name)
                                     <option value="{{ $permission->id }}" {{ ($password && $permission->id == $password->permission_id ? 'selected' : '') }}>
                                         {{ $permission->display_name }}
                                     </option>
-                                @endif
+                                @endcan
                             @endforeach
                         </select>
 
@@ -54,7 +53,7 @@
                                    value="{{ $password ? Crypt::decrypt($password->password) : '' }}">
 
                             <label>Website URI:</label>
-                            <input class="form-control mb-3" type="text" name="url" value="{{ $password->url or '' }}">
+                            <input class="form-control mb-3" type="text" name="url" value="{{ $password->url ?? '' }}">
 
                             <label>Comment:</label>
 
@@ -71,7 +70,7 @@
 
                     <div class="card-footer">
 
-                        <input type="submit" value="Save" class="btn btn-success float-right">
+                        <input type="submit" value="Save" class="btn btn-success float-end">
 
                         <a href="{{ route('passwordstore::index') }}" class="btn btn-default">
                             Cancel

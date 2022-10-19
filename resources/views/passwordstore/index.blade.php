@@ -1,9 +1,8 @@
 @extends('website.layouts.redesign.dashboard')
 
-@section('head')
-    @parent
+@push('head')
     <meta http-equiv="refresh" content="{{ Session::get('passwordstore-verify') - time() }}">
-@endsection
+@endpush
 
 @section('page-title')
     Password Store
@@ -13,7 +12,7 @@
 
     <div class="row justify-content-center">
 
-        <div class="col-2 mb-3">
+        <div class="col-12 col-sm-2 mb-3">
 
             <a href="{{ route('passwordstore::add', ['type' => 'password']) }}" class="btn btn-success btn-block mb-3">
                 Add Password
@@ -24,7 +23,7 @@
 
         </div>
 
-        <div class="col-8">
+        <div class="col-12 col-sm-8">
 
             <div class="card mb-3">
 
@@ -35,7 +34,8 @@
 
                 @if (count($passwords) > 0)
 
-                    <table class="table table-hover table-borderless table-sm">
+                    <div class="table-responsive">
+                    <table class="table table-hover table-sm">
 
                         <thead>
 
@@ -44,10 +44,10 @@
                             <td></td>
                             <td>Description</td>
                             <td>Access</td>
-                            <td>URL</td>
-                            <td>User</td>
-                            <td>Pass</td>
-                            <td>Comment</td>
+                            <td class="text-center">URL</td>
+                            <td class="text-center">User</td>
+                            <td class="text-center">Pass</td>
+                            <td class="text-center">Comment</td>
                             <td>Age</td>
                             <td></td>
                             <td></td>
@@ -66,7 +66,7 @@
 
                                 <tr>
 
-                                    <td class="text-right">
+                                    <td class="text-end">
                                         @if($password->username == null)
                                             <i class="fas fa-sticky-note" aria-hidden="true"></i>
                                         @else
@@ -74,9 +74,8 @@
                                         @endif
                                     </td>
 
-                                    <td>
-                                        {{ $password->description }}
-                                    </td>
+                                    <td>{{ $password->description }}</td>
+
                                     <td>{{ $password->permission->display_name }}</td>
 
                                     <td class="text-center">
@@ -86,34 +85,33 @@
                                             </a>
                                         @endif
                                     </td>
+
                                     <td class="text-center">
                                         @if($password->username != null)
-                                            <i class="fas fa-user mr-1"></i>
-                                            <a class="passwordmanager__copy" href="#" copyTarget="user_{{ $i }}">
-                                                <i class="fas fa-clipboard"></i>
+                                            <a id="{{ $password->description }}-username" class="passwordmanager__copy"
+                                               data-copy="{{ Crypt::decrypt($password->username) }}"
+                                               data-bs-toggle="tooltip" data-bs-trigger="manual" title="Copied!">
+                                                <i class="fas fa-user me-1"></i>
                                             </a>
-                                            <input type="text" class="passwordmanager__hidden" id="user_{{ $i }}"
-                                                   value="{{ Crypt::decrypt($password->username) }}">
                                         @endif
                                     </td>
+
                                     <td class="text-center">
                                         @if($password->password != null)
-                                            <i class="fas fa-key mr-1"></i>
-                                            <a class="passwordmanager__copy" href="#"
-                                               copyTarget="pass_{{ $i }}">
-                                                <i class="fas fa-clipboard"></i>
+                                            <a id="{{ $password->description }}-password" class="passwordmanager__copy"
+                                               data-copy="{{ Crypt::decrypt($password->password) }}"
+                                               data-bs-toggle="tooltip" data-bs-trigger="manual" title="Copied!">
+                                                <i class="fas fa-key me-1"></i>
                                             </a>
-                                            <input type="text" class="passwordmanager__hidden" id="pass_{{ $i }}"
-                                                   value="{{ Crypt::decrypt($password->password) }}">
                                         @endif
                                     </td>
 
                                     <td class="text-center">
                                         @if($password->note)
-                                            <span class="passwordmanager__shownote" data-toggle="modal"
-                                                  data-target="#passwordmodal-{{ $password->id }}">
-                                            <i class="fas fa-sticky-note"></i>
-                                        </span>
+                                            <a class="passwordmanager__shownote" data-bs-toggle="modal"
+                                               data-bs-target="#passwordmodal-{{ $password->id }}">
+                                                <i class="fas fa-sticky-note"></i>
+                                            </a>
                                         @endif
                                     </td>
 
@@ -123,7 +121,7 @@
 
                                     <td>
                                         <a href="{{ route("passwordstore::edit", ['id' => $password->id]) }}">
-                                            <i class="fas fa-edit mr-2"></i>
+                                            <i class="fas fa-edit me-2"></i>
                                         </a>
                                         <a href="{{ route("passwordstore::delete", ['id' => $password->id]) }}">
                                             <i class="fas fa-trash text-danger"></i>
@@ -137,6 +135,7 @@
                         @endforeach
 
                     </table>
+                    </div>
 
                 @else
 
@@ -164,13 +163,12 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <h5 class="modal-title">{{ $password->description }}</h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <textarea class="form-control" rows="15"
-                                      readonly>{{ Crypt::decrypt($password->note) }}</textarea>
+                            <textarea class="form-control" rows="15" readonly>
+                                {{ Crypt::decrypt($password->note) }}
+                            </textarea>
                         </div>
                     </div>
                 </div>
@@ -182,65 +180,18 @@
 
 @endsection
 
-@section('javascript')
+@push('javascript')
 
-    @parent
-
-    <script type="text/javascript">
-        $(".passwordmanager__copy").click(function () {
-            //copyToClipboard($("#" + $(this).attr("copyTarget")));
-            copyToClipboard(document.getElementById($(this).attr("copyTarget")));
-        });
-
-        function copyToClipboard(elem) {
-            // create hidden text element, if it doesn't already exist
-            var targetId = "_hiddenCopyText_";
-            var isInput = elem.tagName === "INPUT" || elem.tagName === "TEXTAREA";
-            var origSelectionStart, origSelectionEnd;
-            if (isInput) {
-                // can just use the original source element for the selection and copy
-                target = elem;
-                origSelectionStart = elem.selectionStart;
-                origSelectionEnd = elem.selectionEnd;
-            } else {
-                // must use a temporary form element for the selection and copy
-                target = document.getElementById(targetId);
-                if (!target) {
-                    var target = document.createElement("textarea");
-                    target.style.position = "absolute";
-                    target.style.left = "-9999px";
-                    target.style.top = "0";
-                    target.id = targetId;
-                    document.body.appendChild(target);
-                }
-                target.textContent = elem.textContent;
-            }
-            // select the content
-            var currentFocus = document.activeElement;
-            target.focus();
-            target.setSelectionRange(0, target.value.length);
-
-            // copy the selection
-            var succeed;
-            try {
-                succeed = document.execCommand("copy");
-            } catch (e) {
-                succeed = false;
-            }
-            // restore original focus
-            if (currentFocus && typeof currentFocus.focus === "function") {
-                currentFocus.focus();
-            }
-
-            if (isInput) {
-                // restore prior selection
-                elem.setSelectionRange(origSelectionStart, origSelectionEnd);
-            } else {
-                // clear temporary content
-                target.textContent = "";
-            }
-            return succeed;
-        }
+    <script type="text/javascript" nonce="{{ csp_nonce() }}">
+        document.querySelectorAll(".passwordmanager__copy").forEach(el => {
+            const copy = el.getAttribute('data-copy')
+            el.addEventListener('click', _ => {
+                navigator.clipboard.writeText(copy)
+                let tooltip = tooltips[el.id]
+                tooltip.show()
+                setTimeout(_ => { tooltip.hide() }, 1000)
+            })
+        })
     </script>
 
-@endsection
+@endpush

@@ -14,11 +14,12 @@
 
                 <div class="card-header bg-dark text-white mb-1">
                     E-mail lists
-                    <a href="{{ route('email::list::add') }}" class="badge badge-info float-right">
+                    <a href="{{ route('email::list::add') }}" class="badge bg-info float-end">
                         Create new list.
                     </a>
                 </div>
 
+                <div class="table-responsive">
                 <table class="table table-hover table-sm">
 
                     <thead>
@@ -37,14 +38,21 @@
                     <tr>
                         <td>All members</td>
                         <td></td>
-                        <td>{{ Member::count() }}</td>
+                        <td>{{ Proto\Models\Member::countValidMembers() }}</td>
+                        <td></td>
+                    </tr>
+
+                    <tr>
+                        <td>All pending members</td>
+                        <td></td>
+                        <td>{{ Proto\Models\Member::countPendingMembers() }}</td>
                         <td></td>
                     </tr>
 
                     <tr>
                         <td>All active members</td>
                         <td></td>
-                        <td>{{ Member::countActiveMembers() }}</td>
+                        <td>{{ Proto\Models\Member::countActiveMembers() }}</td>
                         <td></td>
                     </tr>
 
@@ -57,12 +65,16 @@
                             <td>{{ $list->users->count() }}</td>
                             <td>
                                 <a href="{{ route('email::list::edit', ['id' => $list->id]) }}">
-                                    <i class="fas fa-edit mr-2"></i>
+                                    <i class="fas fa-edit me-2"></i>
                                 </a>
-                                <a onclick="return confirm('Delete e-mail list {{ $list->name }}?');"
-                                   href="{{ route('email::list::delete', ['id' => $list->id]) }}">
-                                    <i class="fas fa-trash text-danger"></i>
-                                </a>
+
+                                @include('website.layouts.macros.confirm-modal', [
+                                    'action' => route('email::list::delete', ['id' => $list->id]),
+                                    'text' => '<i class="fas fa-trash text-danger"></i>',
+                                    'title' => 'Confirm Delete',
+                                    'message' => "Are you sure you want to delete e-mail list $list->name?",
+                                    'confirm' => 'Delete',
+                                ])
                             </td>
 
                         </tr>
@@ -70,6 +82,7 @@
                     @endforeach
 
                 </table>
+                </div>
 
             </div>
 
@@ -81,7 +94,7 @@
 
                 <div class="card-header bg-dark text-white mb-1">
                     Emails
-                    <a href="{{ route('email::add') }}" class="badge badge-info float-right">Compose email.</a>
+                    <a href="{{ route('email::add') }}" class="badge bg-info float-end">Compose email.</a>
                 </div>
 
                 <table class="table table-sm table-hover">
@@ -102,7 +115,7 @@
 
                     @foreach($emails as $email)
 
-                        <tr style="{{ ($email->sent ? 'opacity: 0.5;' : '') }}">
+                        <tr class="{{ $email->sent ? 'opacity-50' : '' }}">
 
                             <td>{{ $email->description }}</td>
                             <td>
@@ -115,6 +128,8 @@
                                 via
                                 @if ($email->to_user)
                                     all users
+                                @elseif ($email->to_pending)
+                                    all pending members
                                 @elseif($email->to_member)
                                     all members
                                 @elseif($email->to_active)
@@ -122,7 +137,10 @@
                                 @elseif($email->to_list)
                                     list(s) {{ $email->getListName() }}
                                 @elseif($email->to_event)
-                                    event(s) {{ $email->getEventName() }}
+                                    event(s) {{$email->to_backup?'with backup users':''}}:
+                                    @foreach($email->events()->get() as $event)
+                                        {{$event->title}}.
+                                        @endforeach
                                 @endif
                             </td>
                             <td>
@@ -141,16 +159,19 @@
                             </td>
                             <td>
                                 <a href="{{ route('email::show', ['id' => $email->id]) }}">
-                                    <i class="fas fa-eye mr-2 text-info"></i>
+                                    <i class="fas fa-eye me-2 text-info"></i>
                                 </a>
                                 @if (!$email->sent)
-                                    <a onclick="return confirm('You sure you want to delete this e-mail?')"
-                                       href="{{ route('email::delete', ['id' => $email->id]) }}">
-                                        <i class="fas fa-trash text-danger mr-2"></i>
-                                    </a>
+                                    @include('website.layouts.macros.confirm-modal', [
+                                        'action' => route('email::delete', ['id' => $email->id]),
+                                        'text' => '<i class="fas fa-trash text-danger me-2"></i>',
+                                        'title' => 'Confirm Delete',
+                                        'message' => "Are you sure you want to delete this e-mail?",
+                                        'confirm' => 'Delete',
+                                    ])
                                     @if (!$email->ready)
                                         <a href="{{ route('email::toggleready', ['id' => $email->id]) }}">
-                                            <i class="fas fa-paper-plane text-warning mr-2"></i>
+                                            <i class="fas fa-paper-plane text-warning me-2"></i>
                                         </a>
                                         <a href="{{ route('email::edit', ['id' => $email->id]) }}">
                                             <i class="fas fa-edit"></i>

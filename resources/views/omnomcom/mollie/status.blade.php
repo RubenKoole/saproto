@@ -27,19 +27,18 @@
                     </tr>
                     <tr>
                         <th>Amount</th>
-                        <td>&euro;{{ number_format($mollie->amount, 2) }}</td>
+                        <td>&euro;{{ number_format($mollie->amount->value, 2) }}</td>
                     </tr>
                     <tr>
                         <th>Status</th>
                         <td>
-                            @if(MollieTransaction::translateStatus($mollie->status) == 'open')
-                                <span class="label label-default">{{ $mollie->status }}</span>
-                                <a href="{{$mollie->links->paymentUrl}}">
-                                    <span class="label label-success">Continue Payment</span>
+                            @if(Proto\Models\MollieTransaction::translateStatus($mollie->status) == 'open')
+                                <a href="{{ $transaction->payment_url }}">
+                                    <span class="label label-success">{{ $mollie->status }} - Continue Payment</span>
                                 </a>
-                            @elseif(MollieTransaction::translateStatus($mollie->status) == 'paid')
+                            @elseif(Proto\Models\MollieTransaction::translateStatus($mollie->status) == 'paid')
                                 <span class="label label-success">{{ $mollie->status }}</span>
-                            @elseif(MollieTransaction::translateStatus($mollie->status) == 'failed')
+                            @elseif(Proto\Models\MollieTransaction::translateStatus($mollie->status) == 'failed')
                                 <span class="label label-danger">{{ $mollie->status }}</span>
                             @else
                                 <span class="label label-warning">{{ $mollie->status }}</span>
@@ -50,7 +49,7 @@
 
                 <div class="card-body">
 
-                    @if(MollieTransaction::translateStatus($mollie->status) == 'failed')
+                    @if(Proto\Models\MollieTransaction::translateStatus($mollie->status) == 'failed')
                         <p>
                             This payment has failed. All orderlines associated with this payment have been set back to unpaid. You can
                             try to start a new payment.
@@ -84,7 +83,7 @@
 
                 <div class="card-footer">
 
-                    <a href="#" onclick="javascript:history.go(-1)" class="btn btn-default btn-block">Go Back</a>
+                    <a href="{{ url()->previous() }}" class="btn btn-default btn-block">Go Back</a>
 
                 </div>
 

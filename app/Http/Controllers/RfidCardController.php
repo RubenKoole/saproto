@@ -2,99 +2,91 @@
 
 namespace Proto\Http\Controllers;
 
-use Illuminate\Http\Request;
-
-use Proto\Http\Requests;
-use Proto\Http\Controllers\Controller;
-use Proto\Models\RfidCard;
-use Proto\Models\QrAuthRequest;
-
-use Redirect;
 use Auth;
+use Exception;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\View\View;
+use Proto\Models\QrAuthRequest;
+use Proto\Models\RfidCard;
+use Redirect;
+use Session;
 
 class RfidCardController extends Controller
 {
     /**
-     * Store a newly created resource in storage.
-     * This method returns raw HTML and is intended to be used via AJAX!
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @return array This method returns raw HTML and is intended to be used via AJAX!
+     * @throws Exception
      */
     public function store(Request $request)
     {
-
         switch ($request->input('credentialtype')) {
             case 'qr':
                 $qrAuthRequest = QrAuthRequest::where('auth_token', $request->input('credentials'))->first();
-                if (!$qrAuthRequest) {
-                    return "<span style='color: red;'>Invalid authentication token.</span>";
+                if (! $qrAuthRequest) {
+                    return ['ok' => false, 'text' => 'Invalid authentication token.'];
                 }
-
                 $user = $qrAuthRequest->authUser();
-                if (!$user) {
-                    return "<span style='color: red;'>QR authentication hasn't been completed.</span>";
+                if (! $user) {
+                    return ['ok' => false, 'text' => "QR authentication hasn't been completed."];
                 }
-
                 break;
 
             default:
-                return "<span style='color: red;'>Invalid credential type.</span>";
-
-                break;
+                return ['ok' => false, 'text' => 'Invalid credential type.'];
         }
 
-        if (!$user->is_member) {
-            return "<span style='color: red;'>You must be a member to use the OmNomCom.</span>";
+        if (! $user->is_member) {
+            return ['ok' => false, 'text' => 'You must be a member to use the OmNomCom.'];
         }
 
         $uid = $request->input('card');
         if (strlen($uid) == 0) {
-            return "<span style='color: red;'>Empty card UID provided. Did you scan your card properly?</span>";
+            return ['ok' => false, 'text' => 'Empty card UID provided. Did you scan your card properly?'];
         }
 
         $card = RfidCard::where('card_id', $uid)->first();
         if ($card) {
             if ($card->user->id == $user->id) {
-                return "<span style='color: red;'>This card is already registered to you!</span>";
+                return ['ok' => false, 'text' => 'This card is already registered to you!'];
             } else {
-                return "<span style='color: red;'>This card is already registered to someone.</span>";
+                return ['ok' => false, 'text' => 'This card is already registered to someone.'];
             }
         } else {
             $card = RfidCard::create([
                 'user_id' => $user->id,
-                'card_id' => $uid
+                'card_id' => $uid,
             ]);
             $card->save();
-            return "<span style='color: green;'>This card has been successfully registered to " . $user->name . ".</span>";
-        }
 
+            return ['ok' => true, 'text' => 'This card has been successfully registered to '.$user->name];
+        }
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int $id
-     * @return \Illuminate\Http\Response
+     * @param int $id
+     * @return View
      */
     public function edit($id)
     {
+        /** @var RfidCard $rfid */
         $rfid = RfidCard::findOrFail($id);
-        if (($rfid->user->id != Auth::id()) && (!Auth::user()->can('board'))) {
+        if (($rfid->user->id != Auth::id()) && (! Auth::user()->can('board'))) {
             abort(403);
         }
+
         return view('users.rfid.edit', ['card' => $rfid]);
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request $request
-     * @param  int $id
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param int $id
+     * @return RedirectResponse
      */
     public function update(Request $request, $id)
     {
+        /** @var RfidCard $rfid */
         $rfid = RfidCard::findOrFail($id);
         if ($rfid->user->id != Auth::id()) {
             abort(403);
@@ -103,25 +95,26 @@ class RfidCardController extends Controller
         $rfid->name = $request->input('name');
         $rfid->save();
 
-        $request->session()->flash('flash_message', 'Your RFID card has been updated.');
+        Session::flash('flash_message', 'Your RFID card has been updated.');
         return Redirect::route('user::dashboard');
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int $id
-     * @return \Illuminate\Http\Response
+     * @param Request $request
+     * @param int $id
+     * @return RedirectResponse
+     * @throws Exception
      */
     public function destroy(Request $request, $id)
     {
+        /** @var RfidCard $rfid */
         $rfid = RfidCard::findOrFail($id);
         if ($rfid->user->id != Auth::id()) {
-        abort(403);
-    }
+            abort(403);
+        }
         $rfid->delete();
 
-        $request->session()->flash('flash_message', 'Your RFID card has been deleted.');
+        Session::flash('flash_message', 'Your RFID card has been deleted.');
         return Redirect::back();
     }
 }

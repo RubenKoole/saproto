@@ -3,17 +3,14 @@
 namespace Proto\Console\Commands;
 
 use Illuminate\Console\Command;
-
+use Mail;
 use Proto\Mail\Newsletter as NewsletterMail;
 use Proto\Models\EmailList;
 use Proto\Models\Event;
 use Proto\Models\Newsletter;
 
-use Mail;
-
 class NewsletterCron extends Command
 {
-
     /**
      * The name and signature of the console command.
      *
@@ -43,31 +40,18 @@ class NewsletterCron extends Command
      */
     public function handle()
     {
-
         $newsletterlist = EmailList::findOrFail(config('proto.weeklynewsletter'));
 
         $events = Event::getEventsForNewsletter();
 
-        $text = Newsletter::getText()->value;
+        $text = Newsletter::text();
 
-        if ($events->count() > 0) {
+        $this->info('Sending weekly newsletter to '.$newsletterlist->users->count().' people.');
 
-            $this->info('Sending weekly newsletter to ' . $newsletterlist->users->count() . ' people.');
-
-            foreach ($newsletterlist->users as $user) {
-
-                Mail::to($user)->queue((new NewsletterMail($user, $newsletterlist, $text))->onQueue('low'));
-
-            }
-
-            $this->info("Done!");
-
-        } else {
-
-            $this->info("No activities scheduled for the newsletter. Newsletter not sent.");
-
+        foreach ($newsletterlist->users as $user) {
+            Mail::to($user)->queue((new NewsletterMail($user, $newsletterlist, $text))->onQueue('low'));
         }
 
+        $this->info('Done!');
     }
-
 }

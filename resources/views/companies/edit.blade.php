@@ -38,13 +38,13 @@
                         <div class="form-group">
                             <label for="name">Company name:</label>
                             <input type="text" class="form-control" id="name" name="name"
-                                   placeholder="Aperture Science" value="{{ $company->name or '' }}" required>
+                                   placeholder="Aperture Science" value="{{ $company->name ?? '' }}" required>
                         </div>
 
                         <div class="form-group">
                             <label for="url">Company website:</label>
                             <input type="text" class="form-control" id="url" name="url"
-                                   placeholder="http://www.aperturescience.com/" value="{{ $company->url or '' }}"
+                                   placeholder="http://www.aperturescience.com/" value="{{ $company->url ?? '' }}"
                                    required>
                         </div>
 
@@ -77,14 +77,14 @@
                         <hr>
 
                         <div class="custom-file">
-                            <input type="file" class="custom-file-input" name="image">
-                            <label class="custom-file-label" for="customFile">Upload a new image</label>
+                            <input id="image" type="file" class="form-control" name="image">
+                            <label class="form-label" for="image">Upload a new image</label>
                         </div>
 
                     </div>
 
                     <div class="card-footer">
-                        <button type="submit" class="btn btn-success float-right">
+                        <button type="submit" class="btn btn-success float-end">
                             Submit
                         </button>
 

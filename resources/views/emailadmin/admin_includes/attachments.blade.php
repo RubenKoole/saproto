@@ -11,9 +11,11 @@
             <table class="table">
 
                 <thead>
-                <th>File</th>
-                <th>Size</th>
-                <th></th>
+                    <tr>
+                        <th>File</th>
+                        <th>Size</th>
+                        <th></th>
+                    </tr>
                 </thead>
 
                 @foreach($email->attachments as $attachment)
@@ -26,10 +28,13 @@
                             <i>{{ $attachment->getFileSize() }}</i>
                         </td>
                         <td>
-                            <a onclick="return confirm('You sure you want to delete this attachment?')"
-                               href="{{ route('email::attachment::delete', ['id' => $email->id, 'file_id' => $attachment->id]) }}">
-                                <i class="fas fa-trash text-danger"></i>
-                            </a>
+                            @include('website.layouts.macros.confirm-modal', [
+                                'action' => route('email::attachment::delete', ['id' => $email->id, 'file_id' => $attachment->id]),
+                                'text' => '<i class="fas fa-trash text-danger"></i>',
+                                'title' => 'Confirm Delete',
+                                'message' => "Are you sure you want to delete this attachment?",
+                                'confirm' => 'Delete',
+                            ])
                         </td>
                     </tr>
 
@@ -47,21 +52,21 @@
 
         <div class="card-footer">
 
-            <form method="post" enctype="multipart/form-data"
-                  action="{{ route('email::attachment::add', ['id'=>$email->id]) }}">
-
-                {{ csrf_field() }}
+            <form id="add_attachment" method="post" enctype="multipart/form-data" action="{{ route('email::attachment::add', ['id'=>$email->id]) }}">
+                @csrf
 
                 <div class="custom-file mb-3">
-                    <input type="file" class="custom-file-input" name="attachment">
-                    <label class="custom-file-label" for="customFile">Choose file</label>
+                    <input type="file" id="attachment" class="form-control" name="attachment">
                 </div>
 
-                <button type="submit" class="btn btn-success btn-block"
-                        onclick="return confirm('Any unsaved changes to the e-mail will be discarded if you continue.')">
-                    Upload
-                </button>
-
+                @include('website.layouts.macros.confirm-modal', [
+                    'form' => '#add_attachment',
+                    'classes' => 'btn btn-success btn-block',
+                    'text' => 'Upload',
+                    'title' => 'Confirm Upload',
+                    'message' => "Any unsaved changes to the e-mail will be discarded if you upload an attachment. Are you sure you want to continue?",
+                    'confirm' => 'Upload',
+                ])
             </form>
 
         </div>

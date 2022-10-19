@@ -12,61 +12,53 @@
 
             <div class="card mb-3">
 
-                <div class="card-header bg-dark text-right">
+                <div class="card-header bg-dark text-end">
 
                     <a href="{{route("photo::album::list", ["id"=> $photo->album_id])}}"
-                       class="btn btn-success float-left mr-3">
-                        <i class="fas fa-images mr-3"></i> {{ $photo->album_name }}
+                       class="btn btn-success float-start me-3">
+                        <i class="fas fa-images me-2"></i> {{ $photo->album_name }}
                     </a>
 
-                    @if ($photo->previous != null)
-                        <a href="{{route("photo::view", ["id"=> $photo->previous])}}" class="btn btn-dark mr-3">
-                            <i class="fas fa-arrow-left"></i>
-                        </a>
-                    @else
-                        <a class="btn btn-dark mr-3" disabled>
+                    @if ($photo->previous != null && $photo->previous != $photo->id)
+                        <a href="{{route("photo::view", ["id"=> $photo->previous])}}" class="btn btn-dark me-3">
                             <i class="fas fa-arrow-left"></i>
                         </a>
                     @endif
 
                     @if ($photo->liked == null)
-                        <a href="{{route("photo::likes", ["id"=> $photo->id])}}" class="btn btn-outline-info mr-3">
+                        <a href="{{route("photo::likes", ["id"=> $photo->id])}}" class="btn btn-outline-info me-3">
                             <i class="far fa-heart"></i> {{ $photo->likes }}
                         </a>
                     @endif
 
                     @if($photo->liked != null)
-                        <a href="{{route("photo::dislikes", ["id"=> $photo->id])}}" class="btn btn-info mr-3">
+                        <a href="{{route("photo::dislikes", ["id"=> $photo->id])}}" class="btn btn-info me-3">
                             <i class="fas fa-heart"></i> {{ $photo->likes }}
                         </a>
                     @endif
 
                     @if($photo->private)
-                        <a href="javascript:void();" class="btn btn-info mr-3" data-toggle="tooltip"
-                           data-placement="top" title="This photo is only visible to members.">
+                        <a href="#" class="btn btn-info me-3" data-bs-toggle="tooltip"
+                           data-bs-placement="top" title="This photo is only visible to members.">
                             <i class="fas fa-eye-slash"></i>
                         </a>
                     @endif
 
-                    @if($photo->next != null)
+                    @if($photo->next != null && $photo->next != $photo->id)
                         <a href="{{route("photo::view", ["id"=> $photo->next])}}" class="btn btn-dark">
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
-                    @else
-                        <a class="btn btn-dark" disabled>
                             <i class="fas fa-arrow-right"></i>
                         </a>
                     @endif
 
                 </div>
 
-                <img class="card-img-bottom" src="{!! $photo->photo_url !!}">
+                <img class="card-img-bottom" src="{!! $photo->photo_url !!}" style="max-height: 70vh; object-fit:scale-down">
 
             </div>
 
             <div class="card mb-3">
                 <div class="card-body text-center">
-                    <i class="fas fa-shield-alt fa-fw mr-3"></i>
+                    <i class="fas fa-shield-alt fa-fw me-3"></i>
                     If there is a photo that you would like removed, please contact
                     <a href="mailto:photos&#64;{{ config('proto.emaildomain') }}">
                         photos&#64;{{ config('proto.emaildomain') }}.
@@ -80,57 +72,46 @@
 
 @endsection
 
-@section('javascript')
+@push('javascript')
+    <script type="text/javascript" nonce="{{ csp_nonce() }}">
+        document.addEventListener('keydown', e => {
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key))
+                e.preventDefault();
 
-    @parent
-
-    <script>
-
-        document.onkeydown = checkKey;
-
-        function checkKey(e) {
-
-            e.preventDefault();
-
-            e = e || window.event;
-
-            if (e.keyCode == '37') {
+            switch(e.key) {
                 @if ($photo->previous != null)
+                case 'ArrowLeft':
                     window.location.href = '{{route("photo::view", ["id"=> $photo->previous])}}';
+                    break;
                 @endif
-            }
-            else if (e.keyCode == '39') {
                 @if ($photo->next != null)
+                case 'ArrowRight':
                     window.location.href = '{{route("photo::view", ["id"=> $photo->next])}}';
+                    break;
                 @endif
-            } else if (e.keyCode == '38') {
                 @if (Auth::check())
+                case 'ArrowUp':
                     window.location.href = '{{route("photo::likes", ["id"=> $photo->id])}}';
+                    break;
                 @endif
-            } else if (e.keyCode == '40') {
                 @if (Auth::check())
+                case 'ArrowDown':
                     window.location.href = '{{route("photo::dislikes", ["id"=> $photo->id])}}';
+                    break;
                 @endif
             }
-        }
-
-
+        })
     </script>
 
-    <script>
-        (function (window, location) {
-            history.replaceState(null, document.title, location.pathname + "#!/stealingyourhistory");
-            history.pushState(null, document.title, location.pathname);
+    <script type="text/javascript" nonce="{{ csp_nonce() }}">
+        history.replaceState(null, document.title, location.pathname+"#!/history")
+        history.pushState(null, document.title, location.pathname)
 
-            window.addEventListener("popstate", function () {
-                if (location.hash === "#!/stealingyourhistory") {
-                    history.replaceState(null, document.title, location.pathname);
-                    setTimeout(function () {
-                        location.replace("{{ route('photo::album::list', ['id' => $photo->album_id])."#photo_".$photo->id }}");
-                    }, 0);
-                }
-            }, false);
-        }(window, location));
+        window.addEventListener("popstate", function() {
+            if(location.hash === "#!/history") {
+                history.replaceState(null, document.title, location.pathname)
+                setTimeout(_ => location.replace("{{ route('photo::album::list', ['id' => $photo->album_id])."?page=".$photo->albumPage }}"), 10)
+            }
+        }, false)
     </script>
-
-@endsection
+@endpush

@@ -21,12 +21,16 @@
                     </div>
 
                     <div class="card-body">
+                        <div class="alert alert-danger" role="alert">
+                            This feature is currently disabled due to our disabled YouTube API Key.
+                        </div>
+
                         <label>YouTube video ID:</label>
-                        <input type="text" class="form-control" name="youtube_id" placeholder="M11SvDtPBhA">
+                        <input disabled type="text" class="form-control" name="youtube_id" placeholder="M11SvDtPBhA">
                     </div>
 
                     <div class="card-footer text-center">
-                        <button type="submit" class="btn btn-success btn-block">Add video</button>
+                        <button disabled type="submit" class="btn btn-success btn-block">Add video</button>
                         <br>
                         Developed with
                         <span class="text-danger"><i class="fab fa-youtube fa-fw"></i> YouTube</span>
@@ -47,6 +51,7 @@
                     @yield('page-title')
                 </div>
 
+                <div class="table-responsive">
                 <table class="table table-hover table-sm">
 
                     <thead>
@@ -75,26 +80,30 @@
                                         {{  sprintf("%s (%s)",$video->event->title,date('d-m-Y', $video->event->start)) }}
                                     </a>
                                 @else
-                                    <i style="color: lightgray">none</i>
+                                    <i class="opacity-50">none</i>
                                 @endif
                             </td>
                             <td>
                                 <a href="{{ route('video::view', ['id' => $video->id]) }}">
-                                    <i class="fas fa-play mr-2"></i>
+                                    <i class="fas fa-play me-2"></i>
                                 </a>
                                 <a href="{{ route('video::admin::edit', ['id' => $video->id]) }}">
-                                    <i class="fas fa-edit mr-2"></i>
+                                    <i class="fas fa-edit me-2"></i>
                                 </a>
-                                <a onclick="return confirm('Delete this video: {{ $video->title }}?')"
-                                   href="{{ route('video::admin::delete', ['id' => $video->id]) }}">
-                                    <i class="fas fa-trash text-danger"></i>
-                                </a>
+                                @include('website.layouts.macros.confirm-modal', [
+                                   'action' => route('video::admin::delete', ['id' => $video->id]),
+                                   'text' => '<i class="fas fa-trash text-danger"></i>',
+                                   'title' => 'Confirm Delete',
+                                   'message' => "Are you sure you want to delete this video: $video->title",
+                                   'confirm' => 'Delete',
+                                ])
                             </td>
                         </tr>
 
                     @endforeach
 
                 </table>
+                </div>
 
             </div>
 

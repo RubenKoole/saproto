@@ -2,51 +2,65 @@
 
 namespace Proto\Http\Controllers;
 
+use Auth;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
-
-use Proto\Models\Product;
-use Proto\Models\User;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Response as SupportResponse;
+use Illuminate\Support\Facades\View as ViewFacade;
+use Illuminate\View\View;
+use Proto\Models\Achievement;
+use Proto\Models\Committee;
 use Proto\Models\Event;
 use Proto\Models\Page;
-use Proto\Models\Committee;
-
-use Response;
-use View;
-use Auth;
+use Proto\Models\PhotoAlbum;
+use Proto\Models\Product;
+use Proto\Models\User;
 use Session;
 
 class SearchController extends Controller
 {
-
+    /**
+     * @param Request $request
+     * @return View
+     */
     public function search(Request $request)
     {
-
         $term = $request->input('query');
 
         $users = [];
         if (Auth::check() && Auth::user()->is_member) {
-            $presearch_users = $this->getGenericSearch(User::class, $term,
-                Auth::check() && Auth::user()->can('board') ? ['id', 'name', 'calling_name', 'utwente_username', 'email'] : ['id', 'name', 'calling_name', 'email']);
+            $presearch_users = $this->getGenericSearch(
+                User::class,
+                $term,
+                Auth::user()->can('board') ? ['id', 'name', 'calling_name', 'utwente_username', 'email'] : ['id', 'name', 'calling_name', 'email']
+            );
             foreach ($presearch_users as $user) {
                 if ($user->is_member) {
                     $users[] = $user;
                 }
-
             }
         }
 
         $pages = [];
-        $presearch_pages = $this->getGenericSearch(Page::class, $term,
-            ['slug', 'title', 'content']);
+        $presearch_pages = $this->getGenericSearch(
+            Page::class,
+            $term,
+            ['slug', 'title', 'content']
+        );
         foreach ($presearch_pages as $page) {
-            if (!$page->is_member_only || (Auth::check() && Auth::user()->is_member)) {
+            if (! $page->is_member_only || (Auth::check() && Auth::user()->is_member)) {
                 $pages[] = $page;
             }
         }
 
         $committees = [];
-        $presearch_committees = $this->getGenericSearch(Committee::class, $term,
-            ['id', 'name', 'slug']);
+        $presearch_committees = $this->getGenericSearch(
+            Committee::class,
+            $term,
+            ['id', 'name', 'slug']
+        );
         foreach ($presearch_committees as $committee) {
             if ($committee->public || (Auth::check() && Auth::user()->can('board'))) {
                 $committees[] = $committee;
@@ -54,11 +68,26 @@ class SearchController extends Controller
         }
 
         $events = [];
-        $presearch_events = $this->getGenericSearch(Event::class, $term,
-            ['id', 'title']);
+        $presearch_events = $this->getGenericSearch(
+            Event::class,
+            $term,
+            ['id', 'title']
+        );
         foreach ($presearch_events as $event) {
-            if (!$event->secret || (Auth::check() && Auth::user()->can('board'))) {
+            if (! $event->secret || (Auth::check() && Auth::user()->can('board'))) {
                 $events[] = $event;
+            }
+        }
+
+        $photoAlbums = [];
+        $presearch_photo_albums = $this->getGenericSearch(
+            PhotoAlbum::class,
+            $term,
+            ['id', 'name']
+        );
+        foreach ($presearch_photo_albums as $album) {
+            if (! $album->secret || (Auth::check() && Auth::user()->can('protography'))) {
+                $photoAlbums[] = $album;
             }
         }
 
@@ -67,14 +96,17 @@ class SearchController extends Controller
             'users' => $users,
             'pages' => $pages,
             'committees' => $committees,
-            'events' => array_reverse($events)
+            'events' => array_reverse($events),
+            'photoAlbums'=>$photoAlbums,
         ]);
-
     }
 
+    /**
+     * @param Request $request
+     * @return View
+     */
     public function ldapSearch(Request $request)
     {
-
         $query = null;
         $data = null;
         if ($request->has('query')) {
@@ -84,7 +116,7 @@ class SearchController extends Controller
             }
             if (strlen($query) >= 3) {
                 $terms = explode(' ', $query);
-                $search = "&";
+                $search = '&';
                 foreach ($terms as $term) {
                     if (Auth::user()->can('board')) {
                         $search .= "(|(sn=*$term*)(middlename=*$term*)(givenName=*$term*)(userPrincipalName=$term@utwente.nl)(telephoneNumber=*$term*)(otherTelephone=*$term*)(physicalDeliveryOfficeName=*$term*))";
@@ -97,71 +129,110 @@ class SearchController extends Controller
                 Session::flash('flash_message', 'Please make your search term more than three characters.');
             }
         }
+
         return view('website.ldapsearch', [
             'term' => $query,
-            'data' => (array)$data
+            'data' => (array) $data,
         ]);
-
     }
 
+    /** @return Response */
     public function openSearch()
     {
-        return Response::make(View::make('website.opensearch'))->header('Content-Type', 'text/xml');
+        /* @phpstan-ignore-next-line */
+        return SupportResponse::make(ViewFacade::make('website.opensearch'))->header('Content-Type', 'text/xml');
     }
 
+    /**
+     * @param Request $request
+     * @return array
+     */
     public function getUserSearch(Request $request)
     {
         $search_attributes = ['id', 'name', 'calling_name', 'utwente_username', 'email'];
         $result = [];
         foreach ($this->getGenericSearch(User::class, $request->get('q'), $search_attributes) as $user) {
-            $result[] = (object)[
+            $result[] = (object) [
                 'id' => $user->id,
                 'name' => $user->name,
-                'is_member' => $user->is_member
+                'is_member' => $user->is_member,
             ];
         }
+
         return $result;
     }
 
+    /**
+     * @param Request $request
+     * @return array
+     */
     public function getEventSearch(Request $request)
     {
         $search_attributes = ['id', 'title'];
+
         return $this->getGenericSearch(Event::class, $request->get('q'), $search_attributes);
     }
 
+    /**
+     * @param Request $request
+     * @return array
+     */
     public function getCommitteeSearch(Request $request)
     {
         $search_attributes = ['id', 'name', 'slug'];
+
         return $this->getGenericSearch(Committee::class, $request->get('q'), $search_attributes);
     }
 
+    /**
+     * @param Request $request
+     * @return array
+     */
     public function getProductSearch(Request $request)
     {
         $search_attributes = ['id', 'name'];
+
         return $this->getGenericSearch(Product::class, $request->get('q'), $search_attributes);
     }
 
+    /**
+     * @param Request $request
+     * @return array
+     */
+    public function getAchievementSearch(Request $request)
+    {
+        $search_attributes = ['id', 'name'];
+
+        return $this->getGenericSearch(Achievement::class, $request->get('q'), $search_attributes);
+    }
+
+    /**
+     * @param class-string|Model $model
+     * @param string $query
+     * @param string[] $attributes
+     * @return Collection<Model>|array
+     */
     private function getGenericSearch($model, $query, $attributes)
     {
-
-        $terms = explode(' ', str_replace("*", "%", $query));
+        $terms = explode(' ', str_replace('*', '%', $query));
         $query = $model::query();
 
         $check_at_least_one_valid_term = false;
         foreach ($terms as $term) {
-            if (strlen(str_replace("%", "", $term)) < 3) {
+            if (strlen(str_replace('%', '', $term)) < 3) {
                 continue;
             }
             $check_at_least_one_valid_term = true;
         }
-        if ($check_at_least_one_valid_term == false) {
+
+        if (! $check_at_least_one_valid_term) {
             return [];
         }
 
         foreach ($attributes as $attr) {
             $query = $query->orWhere(function ($query) use ($terms, $attr) {
                 foreach ($terms as $term) {
-                    if (strlen(str_replace("%", "", $term)) < 3) {
+                    if (strlen(str_replace('%', '', $term)) < 3) {
                         continue;
                     }
                     $query = $query->where($attr, 'LIKE', sprintf('%%%s%%', $term));
@@ -171,5 +242,4 @@ class SearchController extends Controller
 
         return $query->get();
     }
-
 }

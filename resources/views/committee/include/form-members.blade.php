@@ -13,50 +13,50 @@
             <div class="card-body">
 
                 <div class="form-group">
-                    <label>Member</label>
-                    <select class="form-control user-search" name="user_id" required></select>
+                    <div class="form-group autocomplete">
+                        <label for="member">Member</label>
+                        <input id="member" class="form-control user-search" name="user_id" required/>
+                    </div>
                     <input type="hidden" name="committee_id" value="{{ $committee->id }}">
                 </div>
 
                 <div class="row">
                     <div class="col-6">
                         <div class="form-group">
-                            <label>Role</label>
-                            <input type="text" class="form-control" name="role" placeholder="Developer">
+                            <label for="role">Role</label>
+                            <input id="role" type="text" class="form-control" name="role" placeholder="Developer">
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="form-group">
-                            <label>Edition</label>
-                            <input type="text" class="form-control" name="edition" placeholder="3.0">
+                            <label for="edition">Edition</label>
+                            <input id="edition" type="text" class="form-control" name="edition" placeholder="3.0">
                         </div>
                     </div>
                 </div>
 
                 <div class="row">
                     <div class="col-6">
-                        <div class="form-group">
-                            <label>Since</label>
-                            @include('website.layouts.macros.datetimepicker', [
-                                'name' => 'start'
-                            ])
-                        </div>
+                        @include('website.layouts.macros.datetimepicker', [
+                            'format' => 'date',
+                            'name' => 'start',
+                            'label' => 'Since'
+                        ])
                     </div>
                     <div class="col-6">
-                        <div class="form-group">
-                            <label>Till</label>
-                            @include('website.layouts.macros.datetimepicker', [
-                                'name' => 'end',
-                                'not_required' => true
-                            ])
-                        </div>
+                        @include('website.layouts.macros.datetimepicker', [
+                            'format' => 'date',
+                            'name' => 'end',
+                            'label' => 'Until',
+                            'not_required' => true
+                        ])
                     </div>
                 </div>
             </div>
 
             <div class="card-footer">
 
-                <button type="submit" class="btn btn-success btn-block float-right">
+                <button type="submit" class="btn btn-success btn-block float-end">
                     Add
                 </button>
 

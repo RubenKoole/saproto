@@ -4,8 +4,6 @@ namespace Proto\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
-use Proto\Console\Commands\MemberRenewCron;
-use Proto\Console\Commands\SyncWikiAccounts;
 
 class Kernel extends ConsoleKernel
 {
@@ -15,7 +13,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        Commands\GenerateRoles::class,
+        Commands\SyncRoles::class,
         Commands\TestEmail::class,
         Commands\MailAliasSync::class,
         Commands\EmailCron::class,
@@ -39,13 +37,15 @@ class Kernel extends ConsoleKernel
         Commands\OmNomComCleanup::class,
         Commands\MakeAdmin::class,
         Commands\DirectAdminSync::class,
-        Commands\SyncWikiAccounts::class
+        Commands\SyncWikiAccounts::class,
+        Commands\MemberCleanup::class,
+        Commands\AddSysadmin::class,
     ];
 
     /**
      * Define the application's command schedule.
      *
-     * @param  \Illuminate\Console\Scheduling\Schedule $schedule
+     * @param  Schedule $schedule
      * @return void
      */
     protected function schedule(Schedule $schedule)
@@ -58,13 +58,13 @@ class Kernel extends ConsoleKernel
         $schedule->command('proto:achievementscron')->daily()->at('00:10');
         $schedule->command('proto:clearsessions')->daily()->at('01:00');
         $schedule->command('proto:feecron')->daily()->at('02:00');
-        $schedule->command('proto:adsync --full')->daily()->at('03:00');
+        $schedule->command('proto:membercleanup')->daily()->at('3:00');
         $schedule->command('proto:filecleanup')->daily()->at('04:00');
         $schedule->command('proto:spotifysync')->daily()->at('05:00');
         $schedule->command('proto:omnomcleanup')->daily()->at('06:00');
         $schedule->command('proto:helperremindercron')->daily()->at('08:00');
         $schedule->command('proto:helpernotificationcron')->daily()->at('10:00');
-        $schedule->command('proto:playsound ' . config('proto.soundboardSounds')['1337'])->daily()->at('13:37');
+//        $schedule->command('proto:playsound '.config('proto.soundboardSounds')['1337'])->daily()->at('13:37');
         $schedule->command('proto:checkutaccounts')->monthly();
         $schedule->command('proto:verifydetailscron')->monthlyOn(1, '12:00');
     }

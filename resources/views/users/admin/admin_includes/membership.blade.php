@@ -11,20 +11,29 @@
             </li>
 
             @if($user->is_member)
-                <a href="javascript:void();" class="list-group-item text-danger" data-toggle="modal" data-target="#removeMembership">
-                    End membership
+                @include('website.layouts.macros.confirm-modal', [
+                    'action' => route("user::member::remove", ['id'=>$user->id]),
+                    'method' => 'POST',
+                    'classes' => 'list-group-item text-danger',
+                    'text' => 'End membership',
+                    'message' => "Are you sure you want to end the membership of $user->name?"
+                ])
+                <a href="#" class="list-group-item text-warning" data-bs-toggle="modal" data-bs-target="#setMembershipType">
+                    Change membership type
                 </a>
                 <a href="{{ route('membercard::download', ['id' => $user->id]) }}" target="_blank"
                    class="list-group-item">
                     Preview membership card
                 </a>
-                <a href="javascript:void();" id="print-card" data-id="{{ $user->id }}" class="list-group-item">
-                    Print membership card<br>
-                    (Last printed: {{ $user->member->card_printed_on }})
-                </a>
-                <a href="javascript:void();" id="print-card-overlay" data-id="{{ $user->id }}" class="list-group-item">
-                    Print opener overlay
-                </a>
+
+                @include('website.layouts.macros.confirm-modal', [
+                    'action' => route("membercard::print", ['id'=>$user->id]),
+                    'method' => 'POST',
+                    'classes' => 'list-group-item',
+                    'text' => 'Print membership card',
+                    'message' => "Do you want to print $user->name's card? <br> Card last printed on: ".($user->member->card_printed_on ?? 'Never printed before' )
+                ])
+
             @else
                 <li class="list-group-item">
                     Not a member
@@ -34,7 +43,7 @@
                         <i class="fas fa-check-circle text-success"></i>
                         Has complete profile
                     </li>
-                    <a href="javascript:void();" class="list-group-item text-warning" data-toggle="modal" data-target="#addMembership">
+                    <a href="#" class="list-group-item text-warning" data-bs-toggle="modal" data-bs-target="#addMembership">
                         Make member
                     </a>
                 @else
@@ -49,19 +58,21 @@
 
         @if($user->is_member)
             <ul class="list-group mb-3">
+
                 <li class="list-group-item list-group-item-dark">
                     Current Membership
                 </li>
-                    <li class="table-responsiv list-group-item">
-                        <table class="w-100">
-                            <thead>
-                                <tr>
-                                    <td>Since</td>
-                                    <td>Type</td>
-                                    <td></td>
-                                </tr>
-                            </thead>
-                            <tbody>
+                <li class="table-responsiv list-group-item">
+                    <table class="w-100">
+                        <thead>
+                            <tr>
+                                <td>Since</td>
+                                <td>Type</td>
+                                <td class="text-center">Form</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
                                 <td>
                                     {{ strtotime($user->member->created_at) > 0 ? date('d-m-Y', strtotime($user->member->created_at)) : 'forever' }}
                                 </td>
@@ -70,20 +81,27 @@
                                         Lifelong <i class="fas fa-clock"></i>
                                     @elseif($user->member->is_honorary)
                                         Honorary <i class="fas fa-trophy"></i>
-                                    @elseif($user->member->is_donator)
-                                        Donator <i class="fas fa-hand-holding-usd"></i>
+                                    @elseif($user->member->is_donor)
+                                        Donor <i class="fas fa-hand-holding-usd"></i>
+                                    @elseif($user->member->is_pet)
+                                        Pet <i class="fas fa-paw"></i>
                                     @else
                                         Regular
                                     @endif
                                 </td>
-                                <td>
-                                    <a class="ml-2" href="{{ route('memberform::download::signed', ['id' => $user->member->membership_form_id]) }}">
-                                        <i class="fas fa-download"></i>
-                                    </a>
+                                <td class="text-center">
+                                    @if($user->member->membershipForm)
+                                        <a class="ms-2" href="{{ route('memberform::download::signed', ['id' => $user->member->membership_form_id]) }}">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    @else
+                                        <i class="fa fa-file-alt" data-bs-toggle="tooltip" data-bs-placement="top" title="No digital membership form, check the physical archive."></i>
+                                    @endif
                                 </td>
-                            </tbody>
-                        </table>
-                    </li>
+                            </tr>
+                        </tbody>
+                    </table>
+                </li>
 
             </ul>
         @endif
@@ -114,11 +132,16 @@
                                     @if($membership->membershipForm)
                                         <td>
                                             <a href="{{ route('memberform::download::signed', ['id' => $membership->membership_form_id]) }}" class="text-decoration-none">
-                                                <i class="fas fa-download fa-fw mr-2 text-info" aria-hidden="true"></i>
+                                                <i class="fas fa-download fa-fw me-2 text-info" aria-hidden="true"></i>
                                             </a>
-                                            <a href="javascript:void();" data-toggle="modal" data-target="#removeMemberForm" data-memberform-id="{{ $membership->membership_form_id }}" class="text-decoration-none">
-                                                <i class="fas fa-trash fa-fw mr-2 text-danger" aria-hidden="true"></i>
-                                            </a>
+                                            @include('website.layouts.macros.confirm-modal', [
+                                                'action' => route("memberform::delete", ['id' => $membership->membership_form_id]),
+                                                'classes' => 'text-danger',
+                                                'text' => '<i class="fas fa-trash fa-fw me-2 text-danger"></i>',
+                                                'title' => 'Confirm Delete',
+                                                'message' => "Are you sure you want to delete the signed membership form of <i>$user->name</i>? Only delete a signed membership form if the form is invalid or the user does not want to become a member.",
+                                                'confirm' => 'Delete',
+                                            ])
                                         </td>
                                     @endif
                                 </tr>
@@ -159,11 +182,17 @@
                                 @if($membership->membershipForm)
                                     <td>
                                         <a href="{{ route('memberform::download::signed', ['id' => $membership->membership_form_id]) }}" class="text-decoration-none">
-                                            <i class="fas fa-download fa-fw mr-2 text-info" aria-hidden="true"></i>
+                                            <i class="fas fa-download fa-fw me-2 text-info" aria-hidden="true"></i>
                                         </a>
-                                        <a href="javascript:void();" data-toggle="modal" data-target="#removeMemberForm" data-memberform-id="{{ $membership->membership_form_id }}" class="text-decoration-none">
-                                            <i class="fas fa-trash fa-fw mr-2 text-danger" aria-hidden="true"></i>
-                                        </a>
+                                        @include('website.layouts.macros.confirm-modal', [
+                                            'action' => route("memberform::delete", ['id' => $membership->membership_form_id]),
+                                            'method' => 'POST',
+                                            'classes' => 'text-danger',
+                                            'text' => '<i class="fas fa-trash fa-fw me-2 text-danger"></i>',
+                                            'title' => 'Confirm Delete',
+                                            'message' => "Are you sure you want to delete the signed membership form of <i>$user->name</i>? Only delete a signed membership form if the form is invalid or the user does not want to become a member.",
+                                            'confirm' => 'Delete',
+                                        ])
                                     </td>
                                 @endif
                             </tr>

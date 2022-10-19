@@ -78,14 +78,14 @@
                     <tr>
                         <th>Studies attended</th>
                         <td>
-                        <span class="badge badge-pill badge-{{ $user->did_study_create ? 'primary' : 'dark' }} text-white"
-                              data-toggle="tooltip" data-placement="bottom"
+                        <span class="badge rounded-pill bg-{{ $user->did_study_create ? 'primary' : 'dark' }} text-white"
+                              data-bs-toggle="tooltip" data-bs-placement="bottom"
                               title="Is this incorrect? Let the board know.">
                             <i class="fas fa-{{ $user->did_study_create ? 'check-' : null }}square fa-fw"></i>
                             Creative Technology
                         </span>
-                            <span class="badge badge-pill badge-{{ $user->did_study_itech ? 'primary' : 'dark' }} text-white"
-                                  data-toggle="tooltip" data-placement="bottom"
+                            <span class="badge rounded-pill bg-{{ $user->did_study_itech ? 'primary' : 'dark' }} text-white"
+                                  data-bs-toggle="tooltip" data-bs-placement="bottom"
                                   title="Is this incorrect? Let the board know.">
                             <i class="fas fa-{{ $user->did_study_itech ? 'check-' : null }}square fa-fw"></i>
                             Interaction Technology
@@ -116,13 +116,13 @@
                     <td>
                         @if ($user->edu_username)
                             {{ $user->utwente_username ? $user->utwente_username : $user->edu_username }}
-                            <a class="badge badge-pill badge-danger float-right"
+                            <a class="badge rounded-pill bg-danger float-end"
                                href="{{ route('user::edu::delete') }}">
                                 <i class="fas fa-unlink fa-fw"></i>
                             </a>
                         @else
                             Not linked
-                            <a class="badge badge-pill badge-primary float-right" href="{{ route('user::edu::add') }}">
+                            <a class="badge rounded-pill bg-primary float-end" href="{{ route('user::edu::add') }}">
                                 <i class="fas fa-user-plus fa-fw"></i>
                             </a>
                         @endif
@@ -138,16 +138,16 @@
                         @if($user->address)
                             {{ $user->address->street }} {{ $user->address->number }}
                             @if($user->is_member)
-                                <a class="badge badge-pill badge-primary float-right"
+                                <a class="badge rounded-pill bg-primary float-end"
                                    href="{{ route('user::address::edit') }}">
                                     <i class="far fa-edit fa-fw"></i>
                                 </a>
                             @else
-                                <a class="badge badge-pill badge-primary float-right ml-2"
+                                <a class="badge rounded-pill bg-primary float-end ms-2"
                                    href="{{ route('user::address::edit') }}">
                                     <i class="far fa-edit fa-fw"></i>
                                 </a>
-                                <a class="badge badge-pill badge-danger float-right"
+                                <a class="badge rounded-pill bg-danger float-end"
                                    href="{{ route('user::address::delete') }}">
                                     <i class="fas fa-eraser fa-fw"></i>
                                 </a>
@@ -157,11 +157,11 @@
                             <br>
                             <p class="text-muted">
                                 @if($user->address_visible)
-                                    <i class="fas fa-user-friends fa-fw mr-2"></i> Visible to members
+                                    <i class="fas fa-user-friends fa-fw me-2"></i> Visible to members
                                 @else
-                                    <i class="fas fa-user-lock fa-fw mr-2"></i> Visible to the board
+                                    <i class="fas fa-user-lock fa-fw me-2"></i> Visible to the board
                                 @endif
-                                <a class="badge badge-pill badge-primary float-right"
+                                <a class="badge rounded-pill bg-primary float-end"
                                    href="{{ route('user::address::togglehidden') }}">
                                     @if($user->address_visible)
                                         Hide from members.
@@ -246,7 +246,7 @@
 
 
                                 <input name="disable_omnomcom" type="checkbox" class="form-check-input"
-                                       id="dashboard__check__omnomcal" {{ ($user->disable_omnomcom == 1 ? 'checked disabled' : '') }}>
+                                       id="dashboard__check__omnomenabled" {{ ($user->disable_omnomcom == 1 ? 'checked disabled' : '') }}>
                                 <label class="form-check-label" for="disable_omnomcom">
                                     Don't let me use the OmNomCom. Only the board can allow you access to the OmNomCom
                                     again.<br>
@@ -286,14 +286,10 @@
                             Choose a theme
                         </p>
                         <select class="form-control" name="theme">
-                            @foreach(config('proto.themes') as $name => $file)
-                                <option value="{{ $file }}" {{ ($user->theme == $file) ? 'selected' : '' }}>{{ $name }}</option>
+                            @foreach(config('proto.themes') as $i => $name)
+                                <option value="{{ $i }}" {{ ($user->theme == $i) ? 'selected' : '' }}>{{ ucwords($name) }}</option>
                             @endforeach
                         </select>
-                        <small>
-                            <i class="fas fa-flask"></i>
-                            Experimental feature, might not always be accurate
-                        </small>
                         <small class="form-text text-muted">
                             This feature was requested by pretty much everyone.
                         </small>

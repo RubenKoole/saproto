@@ -101,16 +101,44 @@
 
         <div class="col-md-12 col-xl-6">
             <a href="{{ route('page::show', ['slug' => 'contact']) }}" class="btn btn-info btn-block mb-3">
-                <i class="fas fa-user mr-2" aria-hidden="true"></i> Contact
+                <i class="fas fa-user me-2" aria-hidden="true"></i> Contact
             </a>
         </div>
 
         <div class="col-md-12 col-xl-6">
             <a href="{{ route("event::list") }}" class="btn btn-info btn-block">
-                <i class="far fa-calendar-alt mr-2" aria-hidden="true"></i> Upcoming events
+                <i class="far fa-calendar-alt me-2" aria-hidden="true"></i> Upcoming events
             </a>
         </div>
 
     </div>
+
+@endsection
+
+@section('right-column')
+
+    @include('website.layouts.macros.recentalbums', ['n' => 4])
+
+    @if(isset($videos) && count($videos) > 0)
+
+        <div class="card mb-3">
+            <div class="card-header bg-dark text-white">
+                <i class="fab fa-youtube fa-fw me-2"></i> Recent videos
+            </div>
+            <div class="card-body">
+
+                @foreach($videos as $video)
+
+                    @include('videos.includes.video_block', [
+                        'video' => $video,
+                        'photo_pop' => false
+                    ])
+
+                @endforeach
+
+            </div>
+        </div>
+
+    @endif
 
 @endsection
