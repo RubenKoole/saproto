@@ -12,7 +12,6 @@ window.nightMode = _ => {
             const falconContainer = document.createElement('div');
             falconContainer.setAttribute('id', 'falconContainer');
             falconContainer.style.height = document.body.clientHeight + 'px';
-            console.log(document.body.clientHeight);
             document.body.appendChild(falconContainer)
             const falconElement = document.createElement('img');
             falconElement.setAttribute('src', "./images/FalconNightTheme.png");
@@ -33,6 +32,8 @@ window.nightMode = _ => {
 
         let velocityX = 0;
         let velocityY = 0.1;
+        let posX = 0;
+        let posY = 0;
         let previousTime = 0;
 
         function updateFalcon(timestamp) {
@@ -41,8 +42,8 @@ window.nightMode = _ => {
             const elapsed = timestamp - previousTime;
             // console.log(elapsed);
 
-            let posX = parseFloat(falcon.style.left.replace('px', ''));
-            let posY = parseFloat(falcon.style.top.replace('px', ''));
+            // let posX = parseFloat(falcon.style.left.replace('px', ''));
+            // let posY = parseFloat(falcon.style.top.replace('px', ''));
             let differenceX = mouseX - posX - falcon.clientWidth/2;
             let differenceY = mouseY - posY - falcon.clientHeight/2;
 
@@ -63,12 +64,20 @@ window.nightMode = _ => {
                 velocityY = velocityY * (MIN_VELOCITY / mag);
             }
 
-            falcon.style.left = `${posX + velocityX * elapsed/5}px`;
-            falcon.style.top = `${posY + velocityY * elapsed/5}px`;
+            posX += velocityX * elapsed/5;
+            posY += velocityY * elapsed/5;
+
+            if (posX > 2000) posX = 2000;
+            if (posX < -500) posX = -500;
+            if (posY > 2000) posY = 2000;
+            if (posY < -500) posY = -500;
 
             // rotation
             angle = Math.PI/2 + Math.atan2(velocityY, velocityX);
-            falcon.style.transform = `rotate(${angle}rad)`;
+            // falcon.style.transform = `rotate(${angle}rad)`;
+
+            falcon.style.transform = `translate(${posX + 14}px, ${posY + 14}px) rotate(${angle}rad)`;
+
 
             previousTime = timestamp;
             window.requestAnimationFrame(updateFalcon);
@@ -80,7 +89,6 @@ window.nightMode = _ => {
         });
 
         window.requestAnimationFrame(updateFalcon);
-        // setInterval(updateFalcon, msPerFrame);
     }
 
     setupFalcon();
