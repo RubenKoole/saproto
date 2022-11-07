@@ -14,7 +14,7 @@ jobs:
       BUILD_SOURCE_DIR: .
       BUILD_ARTIFACT_STAGING_DIR: build/
       BUILD_ARTIFACT_DESTINATION_DIR: /domains/u141044p141890.web0151.zxcs-klant.nl/deployment/uploads/
-      HOST_SERVER: u141044p141890.web0151.zxcs.nl
+      HOST_SERVER: web0151.zxcs.nl
 
     steps:
       - name: 🛎️ Checkout project
