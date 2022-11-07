@@ -79,7 +79,7 @@ jobs:
 #      - name: Deploy to production
 #        uses: appleboy/ssh-action@master
 #        with:
-#          username: YOUR USERNAME GOES HERE
+#          username: ${{ secrets.VIMEXX_SSH_USER }}
 #          host: web0151.zxcs.nl
-#          password: ${{ secrets.SSH_PASSWORD }}
+#          password: ${{ secrets.VIMEXX_SSH_PASSWORD }}
 #          script: 'cd /var/www/html && ./server_deploy.sh'
