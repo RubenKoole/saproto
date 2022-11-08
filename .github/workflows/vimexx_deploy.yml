@@ -79,8 +79,8 @@ jobs:
       - name: Deploy to production
         uses: appleboy/ssh-action@master
         with:
-          username: ${{ secrets.VIMEXX_SSH_USER }}
           host: web0151.zxcs.nl
+          username: ${{ secrets.VIMEXX_SSH_USER }}
+          key: ${{ secrets.VIMEXX_SSH_KEY }}
           port: 7685
-          key: ${{ secrets.VIMEXX_SSH_PASSWORD }}
-          script: 'bash /home/u141044p141890/domains/u141044p141890.web0151.zxcs-klant.nl/deployment/deploy.sh'
+          script: bash /home/u141044p141890/domains/u141044p141890.web0151.zxcs-klant.nl/deployment/deploy.sh
