@@ -76,10 +76,11 @@ jobs:
           local-dir: ${{ env.BUILD_ARTIFACT_STAGING_DIR }}
           server-dir: ${{ env.BUILD_ARTIFACT_DESTINATION_DIR }}
 
-#      - name: Deploy to production
-#        uses: appleboy/ssh-action@master
-#        with:
-#          username: ${{ secrets.VIMEXX_SSH_USER }}
-#          host: web0151.zxcs.nl
-#          password: ${{ secrets.VIMEXX_SSH_PASSWORD }}
-#          script: 'cd /var/www/html && ./server_deploy.sh'
+      - name: Deploy to production
+        uses: appleboy/ssh-action@master
+        with:
+          username: ${{ secrets.VIMEXX_SSH_USER }}
+          host: web0151.zxcs.nl
+          port: 7685
+          password: ${{ secrets.VIMEXX_SSH_PASSWORD }}
+          script: 'bash /home/u141044p141890/domains/u141044p141890.web0151.zxcs-klant.nl/deployment/deploy.sh'
