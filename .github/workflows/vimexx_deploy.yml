@@ -82,5 +82,5 @@ jobs:
           username: ${{ secrets.VIMEXX_SSH_USER }}
           host: web0151.zxcs.nl
           port: 7685
-          password: ${{ secrets.VIMEXX_SSH_PASSWORD }}
+          key: ${{ secrets.VIMEXX_SSH_PASSWORD }}
           script: 'bash /home/u141044p141890/domains/u141044p141890.web0151.zxcs-klant.nl/deployment/deploy.sh'
