@@ -21,7 +21,7 @@ class AdventController extends Controller
         return view('advent.index',['eventsArray'=>$events, 'date'=>$date]);
     }
 
-    public function toggleDecember() {
+    public function toggle_december() {
             Cookie::queue('disable-december', Cookie::get('disable-december') === 'disabled' ? 'enabled' : 'disabled', 43800);
             return Redirect::back();
     }

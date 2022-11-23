@@ -648,14 +648,19 @@ Route::group(['middleware' => ['forcedomain']], function () {
 
     /* Routes related to photos. */
     Route::group(['prefix' => 'photos', 'as' => 'photo::'], function () {
-        Route::get('', ['as' => 'albums', 'uses' => 'PhotoController@index']);
+        Route::get('list', ['as' => 'albums', 'uses' => 'PhotoController@index']);
         Route::get('slideshow', ['as' => 'slideshow', 'uses' => 'PhotoController@slideshow']);
+
+        Route::group(['prefix' => 'liked', 'middleware' => ['member'], 'as' => 'liked::'], function () {
+            Route::get('', ['as' => 'list', 'uses' => 'LikedPicturesController@show']);
+            Route::get('/{id}', ['as' => 'likedPhoto', 'uses' => 'LikedPicturesController@photo']);
+        });
 
         Route::group(['prefix' => '{id}', 'as' => 'album::'], function () {
             Route::get('', ['as' => 'list', 'uses' => 'PhotoController@show']);
         });
-        Route::get('/like/{id}', ['as' => 'likes', 'middleware' => ['auth'], 'uses' => 'PhotoController@likePhoto']);
-        Route::get('/dislike/{id}', ['as' => 'dislikes', 'middleware' => ['auth'], 'uses' => 'PhotoController@dislikePhoto']);
+        
+        Route::get('/likes/{id}', ['as' => 'like', 'uses' => 'PhotoController@toggleLike']);
         Route::get('/photo/{id}', ['as' => 'view', 'uses' => 'PhotoController@photo']);
 
         /* Routes related to the photo admin. */
@@ -674,8 +679,8 @@ Route::group(['middleware' => ['forcedomain']], function () {
     });
 
     Route::group(['prefix' => 'image', 'as' => 'image::'], function () {
-        Route::get('{id}/{hash}', ['as' => 'get', 'uses' => 'FileController@getImage']);
-        Route::get('{id}/{hash}/{name}', ['uses' => 'FileController@getImage']);
+        Route::get('{id}/{hash}', ['as' => 'get', 'uses' => 'FileController@get']);
+        Route::get('{id}/{hash}/{name}', ['uses' => 'FileController@get']);
     });
 
     /* Routes related to Spotify. */
@@ -844,7 +849,7 @@ Route::group(['middleware' => ['forcedomain']], function () {
     /*Routes related to the advent calender*/
     Route::group(['prefix' => 'advent', 'as' => 'advent::'], function () {
         Route::get('', ['as' => 'index', 'uses' => 'AdventController@index']);
-        Route::get('toggle', ['as' => 'toggle', 'uses' => 'AdventController@toggleDecember']);
+        Route::get('toggle', ['as' => 'toggle', 'uses' => 'AdventController@toggle_december']);
     });
 
     /* Routes related to the Minisites */
