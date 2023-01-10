@@ -11,6 +11,8 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\View\View;
 use Proto\Models\Photo;
 use Proto\Models\PhotoAlbum;
+use Proto\Models\PhotoManager;
+use Proto\Models\StorageEntry;
 use Redirect;
 use Session;
 
@@ -19,7 +21,7 @@ class PhotoAdminController extends Controller
     /** @return View */
     public function index()
     {
-        return view('photos.admin.index');
+        return view('photos.admin.index', ['query' => '']);
     }
 
     /** @return View */
@@ -51,9 +53,14 @@ class PhotoAdminController extends Controller
      */
     public function edit($id)
     {
-        $album = PhotoAlbum::findOrFail($id);
-        $photos = $album->items()->get();
-        return view('photos.admin.edit', ['album'=>$album, 'photos' => $photos]);
+        $photos = PhotoManager::getPhotos($id);
+        $fileSizeLimit = ini_get('post_max_size');
+
+        if ($photos == null) {
+            abort(404);
+        }
+
+        return view('photos.admin.edit', ['photos' => $photos, 'fileSizeLimit' => $fileSizeLimit]);
     }
 
     /**
@@ -66,10 +73,10 @@ class PhotoAdminController extends Controller
         $album = PhotoAlbum::find($id);
         $album->name = $request->input('album');
         $album->date_taken = strtotime($request->input('date'));
-        $album->private = $request->has('private');
-        foreach ($album->items as $photo){
-            $photo->private = $request->has('private');
-            $photo->save();
+        if ($request->input('private')) {
+            $album->private = true;
+        } else {
+            $album->private = false;
         }
         $album->save();
 
@@ -96,9 +103,8 @@ class PhotoAdminController extends Controller
         }
             try{
             $uploadFile = $request->file('file');
-            $addWaterMark = $request->has('addWaterMark');
 
-            $photo = $this->createPhotoFromUpload($uploadFile, $id, $addWaterMark);
+            $photo = $this->createPhotoFromUpload($uploadFile, $id);
             return html_entity_decode(view('website.layouts.macros.selectablephoto', ['photo' => $photo]));
             }catch (Exception $e) {
                 return response()->json([
@@ -116,7 +122,7 @@ class PhotoAdminController extends Controller
     public function action(Request $request, $id)
     {
         $action = $request->input('action');
-        $photos = $request->input('photo');
+        $photos = $request->input('photos');
 
         if ($photos) {
             $album = PhotoAlbum::findOrFail($id);
@@ -127,23 +133,23 @@ class PhotoAdminController extends Controller
 
             switch ($action) {
                 case 'remove':
-                    foreach ($photos as $photoId => $photo) {
+                    foreach ($photos as $photoId) {
                         Photo::find($photoId)->delete();
                     }
                     break;
 
                 case 'thumbnail':
-                    reset($photos);
-                    $album->thumb_id = key($photos);
+                    $album->thumb_id = (int) $photos[0];
                     break;
 
                 case 'private':
-                    foreach ($photos as $photoId => $photo) {
+                    foreach ($photos as $photoId) {
                         $photo = Photo::find($photoId);
-                        if($photo && ! $album->published) {
-                            $photo->private = ! $photo->private;
-                            $photo->save();
+                        if ($album->published && $photo->private) {
+                            continue;
                         }
+                        $photo->private = ! $photo->private;
+                        $photo->save();
                     }
                     break;
             }
@@ -160,9 +166,8 @@ class PhotoAdminController extends Controller
      */
     public function delete($id)
     {
-        $album = PhotoAlbum::findOrFail($id);
-        $album->delete();
-        return redirect(route('photo::admin::index'));
+        PhotoManager::deleteAlbum($id);
+        return Redirect::route('photo::admin::index');
     }
 
     /**
@@ -203,12 +208,20 @@ class PhotoAdminController extends Controller
      * @return Photo
      * @throws FileNotFoundException
      */
-    private function createPhotoFromUpload($uploaded_photo, $album_id, $addWatermark = false)
+    private function createPhotoFromUpload($uploaded_photo, $album_id)
     {
-        $album = PhotoAlbum::findOrFail($album_id);
+        $path = 'photos/'.$album_id.'/';
+
+        $file = new StorageEntry();
+        $file->createFromFile($uploaded_photo, $path);
+        $file->save();
+
         $photo = new Photo();
-        $photo->makePhoto($uploaded_photo, $uploaded_photo->getClientOriginalName(), $uploaded_photo->getCTime(), $album->private, $album->id, $album->id, $addWatermark, Auth::user()->name);
+        $photo->date_taken = $uploaded_photo->getCTime();
+        $photo->album_id = $album_id;
+        $photo->file_id = $file->id;
         $photo->save();
+
         return $photo;
     }
 }
