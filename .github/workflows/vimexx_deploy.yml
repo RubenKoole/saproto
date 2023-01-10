@@ -10,15 +10,17 @@ jobs:
     name: Vimexx deploy
     runs-on: ubuntu-latest
     env:
-      PHP_VERSION: 7.3
       BUILD_SOURCE_DIR: .
       BUILD_ARTIFACT_STAGING_DIR: build/
-      BUILD_ARTIFACT_DESTINATION_DIR: /domains/u141044p141890.web0151.zxcs-klant.nl/deployment/uploads/
-      HOST_SERVER: web0151.zxcs.nl
+      BUILD_ARTIFACT_DESTINATION_DIR: /domains/u154449p145131.web0153.zxcs-klant.nl/deployment/uploads/
+      HOST_SERVER: web0153.zxcs.nl
 
     steps:
       - name: 🛎️ Checkout project
         uses: actions/checkout@v2
+
+      - name: 🔍 Read .env
+          run: grep -E 'PHP_VERSION|NODE_VERSION' .env.prod >> $GITHUB_ENV
 
       - name: 🖱️ Setup PHP v${{ env.PHP_VERSION }}
         uses: shivammathur/setup-php@v2
@@ -28,14 +30,11 @@ jobs:
       - name: 📥 Install back-end dependencies
         run: composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
 
-      - name: 🔍 Get Node version
-        id: nvm
-        run: echo ::set-output name=NODE_VERSION::$(cat .nvmrc)
-
-      - name: 🖱️ Set Node v${{ steps.nvm.outputs.NODE_VERSION }}
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ steps.nvm.outputs.NODE_VERSION }}
+      - name: 🖱️ Set Node v${{ env.NODE_VERSION }}
+          uses: actions/setup-node@v3
+          with:
+            node-version: ${{ env.NODE_VERSION }}
+            cache: npm
 
       - name: 📂 Cache front-end dependencies
         id: npm-cache
@@ -79,8 +78,8 @@ jobs:
       - name: Deploy to production
         uses: appleboy/ssh-action@master
         with:
-          host: web0151.zxcs.nl
+          host: web0153.zxcs.nl
           username: ${{ secrets.VIMEXX_SSH_USER }}
           key: ${{ secrets.VIMEXX_SSH_KEY }}
           port: 7685
-          script: cd /home/u141044p141890/domains/u141044p141890.web0151.zxcs-klant.nl/deployment/ && bash deploy.sh
+          script: cd /home/u154449p145131/domains/u154449p145131.web0153.zxcs-klant.nl/deployment/ && bash deploy.sh
