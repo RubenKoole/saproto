@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: 🛎️ Checkout project
-          uses: actions/checkout@v3
+        uses: actions/checkout@v3
 
       - name: 🔍 Read .env
         run: grep -E 'PHP_VERSION|NODE_VERSION' .env.prod >> $GITHUB_ENV
@@ -27,23 +27,23 @@ jobs:
         with:
           php-version: ${{ env.PHP_VERSION }}
 
-        - name: 📥 Install back-end dependencies
-          run: composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
+      - name: 📥 Install back-end dependencies
+        run: composer install --no-interaction --prefer-dist --no-dev --optimize-autoloader
 
-        - name: 🖱️ Set Node v${{ env.NODE_VERSION }}
-          uses: actions/setup-node@v3
-          with:
-            node-version: ${{ env.NODE_VERSION }}
-            cache: npm
+      - name: 🖱️ Set Node v${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-        - name: 📥 Install front-end dependencies
-          run: npm ci --ignore-scripts
+      - name: 📥 Install front-end dependencies
+        run: npm ci --ignore-scripts
 
-        - name: 🔨 build front-end
-          run: npm run prod
+      - name: 🔨 build front-end
+        run: npm run prod
 
-        - name: 🗑️ Remove storage directory
-          run: rm -rf storage
+      - name: 🗑️ Remove storage directory
+        run: rm -rf storage
 
       - name: 📁 Create build directory
           run: mkdir ${{ env.BUILD_ARTIFACT_STAGING_DIR }}
