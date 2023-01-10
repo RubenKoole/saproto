@@ -13,7 +13,7 @@ jobs:
       BUILD_SOURCE_DIR: .
       BUILD_ARTIFACT_STAGING_DIR: build/
       BUILD_ARTIFACT_DESTINATION_DIR: /domains/u154449p145131.web0153.zxcs-klant.nl/deployment/uploads/
-      HOST_SERVER: web0153.zxcs.nl
+      HOST_SERVER: u154449p145131.web0153.zxcs-klant.nl
 
     steps:
       - name: 🛎️ Checkout project
@@ -70,7 +70,7 @@ jobs:
       - name: Deploy to production
         uses: appleboy/ssh-action@master
         with:
-          host: web0153.zxcs.nl
+          host: web0153.zxcs-klant.nl
           username: ${{ secrets.VIMEXX_SSH_USER }}
           key: ${{ secrets.VIMEXX_SSH_KEY }}
           port: 7685
