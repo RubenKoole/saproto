@@ -46,7 +46,7 @@ jobs:
         run: rm -rf storage
 
       - name: 📁 Create build directory
-          run: mkdir ${{ env.BUILD_ARTIFACT_STAGING_DIR }}
+        run: mkdir ${{ env.BUILD_ARTIFACT_STAGING_DIR }}
 
       - name: 🗄️ ZIP Build
         uses: TheDoctor0/zip-release@0.6.1
