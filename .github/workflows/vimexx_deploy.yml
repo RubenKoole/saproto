@@ -68,10 +68,13 @@ jobs:
           server-dir: ${{ env.BUILD_ARTIFACT_DESTINATION_DIR }}
 
       - name: Deploy to production
+        env:
+          USER: ${{ secrets.USER }}
+          DOMAIN: ${{secrets.VIMEXX_DOMAIN}}
         uses: appleboy/ssh-action@master
         with:
           host: web0153.zxcs-klant.nl
           username: ${{ secrets.VIMEXX_SSH_USER }}
           key: ${{ secrets.VIMEXX_SSH_KEY }}
           port: 7685
-          script: cd /home/${{ secrets.VIMEXX_USER }}${{ secrets.VIMEXX_SSH_USER }}/domains/${{ secrets.VIMEXX_DOMAIN }}/deployment/ && bash deploy.sh
+          script: cd /home/env.USER/domains/env.DOMAIN/deployment/ && bash deploy.sh
