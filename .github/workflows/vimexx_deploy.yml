@@ -74,4 +74,4 @@ jobs:
           username: ${{ secrets.VIMEXX_SSH_USER }}
           key: ${{ secrets.VIMEXX_SSH_KEY }}
           port: 7685
-          script: cd /home/u154449p145131/domains/u154449p145131.web0153.zxcs-klant.nl/deployment/ && bash deploy.sh
+          script: cd /home/${{ secrets.VIMEXX_USER }}${{ secrets.VIMEXX_SSH_USER }}/domains/${{ secrets.VIMEXX_DOMAIN }}/deployment/ && bash deploy.sh
