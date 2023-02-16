@@ -300,7 +300,7 @@
     </style>
 
     <script>
-        var server = "{!! config('herbert.server') !!}";
+        var server = "{!! config('protube.server') !!}";
 
         var soundboardSounds;
         var soundboardVolume = 0;

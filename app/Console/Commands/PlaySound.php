@@ -41,10 +41,10 @@ class PlaySound extends Command
     {
         try {
             $sound = '&sound='.$this->argument('sound');
-            Http::get(config('herbert.server').'/soundboard?secret='.config('herbert.secret').$sound);
+            Http::get(config('protube.server').'/soundboard?secret='.config('protube.secret').$sound);
             $this->info('Playing sound.');
         } catch (Exception $e) {
-            $this->error('Could not find herbert:', $e->getMessage());
+            $this->error('Could not find protube:', $e->getMessage());
         }
     }
 }

@@ -6,6 +6,8 @@ use Auth;
 use Carbon;
 use DB;
 use Exception;
+use GuzzleHttp\Promise\PromiseInterface;
+use Illuminate\Http\Client\Response;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -13,6 +15,7 @@ use Illuminate\View\View;
 use Proto\Models\Tempadmin;
 use Proto\Models\User;
 use Redirect;
+use Session;
 
 class TempAdminController extends Controller
 {
@@ -78,10 +81,8 @@ class TempAdminController extends Controller
             // Call Herbert webhook to run check through all connected admins.
             // Will result in kick for users whose temporary admin powers were removed.
 
-
             //disabled because protube is down/it is not implemented in the new one yet
             //Http::get(config('herbert.server').'/adminCheck');
-
         }
 
         return Redirect::back();
@@ -117,8 +118,32 @@ class TempAdminController extends Controller
         $tempadmin->end_at = date('Y-m-d H:i:s', strtotime($request->end_at));
         $tempadmin->save();
 
-        return Redirect::route('tempadmin::index');
+
+        $response = $this->changeProtubeAdmin($tempadmin->user_id, true);
+        if ($response->ok()) {
+            $json = $response->json();
+            if ($json['success']) return Redirect::route('tempadmin::index');
+            else Session::flash('flash_message', sprintf("%s %d", $json['message'], $tempadmin->user_id));
+        } else {
+            Session::flash('flash_message', "Couldn't contact Protube");
+        }
+        return Redirect::back();
     }
+
+    /**
+     * @param string $userID the id of the user that should be updated
+     * @param bool $becomeAdmin if the user should become an admin
+     * @return PromiseInterface|Response the response from the http post request
+     */
+    private function changeProtubeAdmin(int $userID, bool $becomeAdmin) {
+        return Http::withHeaders([
+            'Authorization' => sprintf('Bearer %d', config('protube.secret')),
+            'Content-Type' => 'application/json',
+        ])->withOptions(["verify"=>false])->post(config('protube.server'), [
+            'user_id' => $userID,
+            'admin' => $becomeAdmin
+        ]);
+}
 
     /**
      * @param int $id
