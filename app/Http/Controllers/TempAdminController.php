@@ -19,6 +19,10 @@ use Session;
 
 class TempAdminController extends Controller
 {
+    private const ERROR_CONTACTING_PROTUBE = "Couldn't contact Protube";
+    private const ERROR_REMOVING_ADMINISTRATOR = "Couldn't remove administrator: ";
+    const ERROR_ADDING_ADMINISTRATOR = "Couldn't add administrator: ";
+
     /**
      * @param int $id
      * @return RedirectResponse
@@ -38,6 +42,7 @@ class TempAdminController extends Controller
     }
 
     /**
+     * Removes protube admin rights from the user of the given ID
      * @param int $id
      * @return RedirectResponse
      */
@@ -48,21 +53,14 @@ class TempAdminController extends Controller
 
         foreach ($user->tempadmin as $tempadmin) {
             if (Carbon::now()->between(Carbon::parse($tempadmin->start_at), Carbon::parse($tempadmin->end_at))) {
-                $tempadmin->end_at = Carbon::now()->subSeconds(1);
-                $tempadmin->save();
+                $this->removeAdmin($tempadmin);
             }
         }
-
-        // Call Herbert webhook to run check through all connected admins.
-        // Will result in kick for users whose temporary admin powers were removed.
-
-        //disabled because protube is down/it is not implemented in the new one yet
-        //Http::get(config('herbert.server').'/adminCheck');
-
         return Redirect::back();
     }
 
     /**
+     * Removes protube admin rights from the tempadmin user of the given ID
      * @param int $id
      * @return RedirectResponse
      * @throws Exception
@@ -71,21 +69,30 @@ class TempAdminController extends Controller
     {
         /** @var Tempadmin $tempadmin */
         $tempadmin = Tempadmin::findOrFail($id);
-
-        if (Carbon::parse($tempadmin->start_at)->isFuture()) {
-            $tempadmin->delete();
-        } else {
-            $tempadmin->end_at = Carbon::now()->subSeconds(1);
-            $tempadmin->save();
-
-            // Call Herbert webhook to run check through all connected admins.
-            // Will result in kick for users whose temporary admin powers were removed.
-
-            //disabled because protube is down/it is not implemented in the new one yet
-            //Http::get(config('herbert.server').'/adminCheck');
-        }
-
+        $this->removeAdmin($tempadmin);
         return Redirect::back();
+    }
+
+    /**
+     * Removes the tempadmin from the db and from protube.
+     * Shows a session flash when an error occurred
+     * @param $tempAdmin Tempadmin The temp admin to be removed
+     * @return void
+     */
+    private function removeAdmin($tempAdmin) {
+        // Only send the request to remove the admin rights if the user has become an admin
+        if (!Carbon::parse($tempAdmin->start_at)->isFuture())  {
+            // sends a request to protube to remove the user
+            $response = $this->changeProtubeAdmin($tempAdmin->user_id, false);
+            if ($response->ok()) {
+                $json = $response->json();
+                if (!$json['success']) Session::flash('flash_message', self::ERROR_REMOVING_ADMINISTRATOR . $json['message']);
+            } else {
+                Session::flash('flash_message', self::ERROR_CONTACTING_PROTUBE);
+            }
+        }
+        // removes the temp admin from the db
+        $tempAdmin->delete();
     }
 
     /**
@@ -116,22 +123,25 @@ class TempAdminController extends Controller
         $tempadmin->creator()->associate(Auth::user());
         $tempadmin->start_at = date('Y-m-d H:i:s', strtotime($request->start_at));
         $tempadmin->end_at = date('Y-m-d H:i:s', strtotime($request->end_at));
-        $tempadmin->save();
 
-
+        // Request protube to add the admin
         $response = $this->changeProtubeAdmin($tempadmin->user_id, true);
         if ($response->ok()) {
             $json = $response->json();
-            if ($json['success']) return Redirect::route('tempadmin::index');
-            else Session::flash('flash_message', sprintf("%s %d", $json['message'], $tempadmin->user_id));
+
+            if ($json['success']) {
+                $tempadmin->save();
+                return Redirect::route('tempadmin::index');
+            }
+            else Session::flash('flash_message', self::ERROR_ADDING_ADMINISTRATOR . $json['message']);
         } else {
-            Session::flash('flash_message', "Couldn't contact Protube");
+            Session::flash('flash_message', self::ERROR_CONTACTING_PROTUBE);
         }
         return Redirect::back();
     }
 
     /**
-     * @param string $userID the id of the user that should be updated
+     * @param int $userID the id of the user that should be updated
      * @param bool $becomeAdmin if the user should become an admin
      * @return PromiseInterface|Response the response from the http post request
      */
@@ -141,7 +151,7 @@ class TempAdminController extends Controller
             'Content-Type' => 'application/json',
         ])->withOptions(["verify"=>false])->post(config('protube.server'), [
             'user_id' => $userID,
-            'admin' => $becomeAdmin
+            'admin' => $becomeAdmin ? '1' : '0'
         ]);
 }
 
