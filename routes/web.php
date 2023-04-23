@@ -327,6 +327,7 @@ Route::group(['middleware' => ['forcedomain']], function () {
         Route::get('close/{id}', ['as' => 'close', 'uses' => 'WallstreetController@close']);
         Route::get('edit/{id}', ['as' => 'edit', 'uses' => 'WallstreetController@edit']);
         Route::post('edit/{id}', ['as' => 'edit', 'uses' => 'WallstreetController@update']);
+        Route::get('crash/{id}', ['as' => 'crash', 'uses' => 'WallstreetController@crash']);
         Route::get('delete/{id}', ['as' => 'delete', 'uses' => 'WallstreetController@destroy']);
         Route::get('statistics/{id}', ['as' => 'statistics', 'uses' => 'WallstreetController@statistics']);
         route::group(['prefix'=>'products', 'as'=>'products::'], function () {

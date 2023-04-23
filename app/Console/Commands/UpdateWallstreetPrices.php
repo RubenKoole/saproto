@@ -65,14 +65,19 @@ class UpdateWallstreetPrices extends Command
             $newOrderlines = OrderLine::query()->where('created_at', '>=', \Carbon::now()->subMinute())->where('product_id', $product->id)->sum('units');
             //heighten the price if there are new orders and the price is not the actual price
             if($newOrderlines > 0) {
-                $delta = $newOrderlines * $currentDrink->price_increase;
+                $max_price = $product->price * $currentDrink->max_price_percentage/100;
+                $newPrice= $latestPrice->price;
+                pow($currentDrink->price_increase_percentage/100, $newOrderlines);
+                for($i=0; $i<$newOrderlines; $i++){
+                    $newPrice = $currentDrink->price_increase_percentage/100*$newPrice;
+                }
                 $newPriceObject = new WallstreetPrice([
                     'wallstreet_drink_id' => $currentDrink->id,
                     'product_id' => $product->id,
-                    'price' =>$latestPrice->price + $delta >= $product->price * 1.2 ? $product->price * 1.2 : $latestPrice->price + $delta,
+                    'price' =>$newPrice >= $max_price ? $max_price : $newPrice,
                 ]);
                 $newPriceObject->save();
-                $this->info($product->id.' has '.$newOrderlines.' new orderlines, increasing price by '.$delta.' to '.$newPriceObject->price);
+                $this->info($product->id.' has '.$newOrderlines.' new orderlines, increasing price by '.$latestPrice->price-$newPrice.' to '.$newPriceObject->price);
                 continue;
             }
 
@@ -81,10 +86,10 @@ class UpdateWallstreetPrices extends Command
                 $newPriceObject = new WallstreetPrice([
                     'wallstreet_drink_id' => $currentDrink->id,
                     'product_id' => $product->id,
-                    'price' => $latestPrice->price - $currentDrink->price_decrease < $currentDrink->minimum_price ? $currentDrink->minimum_price : $latestPrice->price - $currentDrink->price_decrease,
+                    'price' => $latestPrice->price - ($latestPrice->price*$currentDrink->price_decrease_percentage/100) < $currentDrink->minimum_price ? $currentDrink->minimum_price : $latestPrice->price-($latestPrice->price*$currentDrink->price_decrease_percentage/100),
                 ]);
                 $newPriceObject->save();
-                $this->info($product->id.' has no new orderlines, lowering price by '.$currentDrink->price_decrease.' to '.$newPriceObject->price);
+                $this->info($product->id.' has no new orderlines, lowering price by '.$latestPrice->price*$currentDrink->price_decrease.' to '.$newPriceObject->price);
             } else {
                 $this->info($product->id.' has no new orderlines and the price is already the minimum price');
             }

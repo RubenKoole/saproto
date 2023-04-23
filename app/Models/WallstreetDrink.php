@@ -15,13 +15,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  * @property int id
  * @property float minimum_price
  * @property float price_decrease
- * @property float price_increase
+ * @property float price_increase_percentage
+ * @property float max_price_percentage
  **/
 class WallstreetDrink extends Model
 {
     use HasFactory;
     protected $table = 'wallstreet_drink';
-    protected $fillable = ['end_time', 'start_time', 'name', 'minimum_price', 'price_increase', 'price_decrease'];
+    protected $fillable = ['end_time', 'start_time', 'name', 'minimum_price', 'price_increase_percentage', 'price_decrease_percentage'];
 
     public function isCurrent(): bool
     {

@@ -35,8 +35,8 @@
                                 <td>{{ Carbon::createFromTimestamp($wallstreetDrink->start_time)->format('m-d-Y H:i') }}</td>
                                 <td>{{ Carbon::createFromTimestamp($wallstreetDrink->end_time)->format('m-d-Y H:i') }}</td>
                                 <td> €{{$wallstreetDrink->minimum_price}} </td>
-                                <td> €{{$wallstreetDrink->price_decrease}} </td>
-                                <td> €{{$wallstreetDrink->price_increase}} </td>
+                                <td> %{{$wallstreetDrink->price_decrease_percentage}} </td>
+                                <td> %{{$wallstreetDrink->price_increase_percentage}} </td>
                                 <td class="text-center px-4">
                                     <a class="btn btn-info badge" href="{{ route('wallstreet::statistics', ['id' => $wallstreetDrink->id]) }}">
                                         View Price History
@@ -44,6 +44,13 @@
                                 </td>
 
                             <td>
+                                    @include('website.layouts.macros.confirm-modal', [
+                                        'action' => route("wallstreet::crash", ['id' => $wallstreetDrink->id]),
+                                        'text' => '<i class="fas fa-chart-line text-danger me-4"></i>',
+                                        'title' => 'Confirm Crash',
+                                        'message' => "Are you sure you want to let this wallstreet crash?<br><br> This will reset all prices!",
+                                        'confirm' => 'CRASH!',
+                                    ])
                                     @if($wallstreetDrink->isCurrent())
                                         @include('website.layouts.macros.confirm-modal', [
                                             'action' => route("wallstreet::close", ['id' => $wallstreetDrink->id]),
@@ -58,7 +65,7 @@
                                     </a>
                                     @include('website.layouts.macros.confirm-modal', [
                                         'action' => route("wallstreet::delete", ['id' => $wallstreetDrink->id]),
-                                        'text' => '<i class="fas fa-trash text-danger"></i>',
+                                        'text' => '<i class="fas fa-trash text-danger me-4"></i>',
                                         'title' => 'Confirm Delete',
                                         'message' => "Are you sure you want to remove this wallstreet drink?<br><br> This will also delete all price history!",
                                         'confirm' => 'Delete',

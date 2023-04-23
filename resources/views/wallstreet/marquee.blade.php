@@ -26,7 +26,7 @@
     @elseif(!count($prices))
         <div class="d-flex justify-content-center w-100 h-100">
             <div class="alert alert-danger align-self-center">
-            No prices found for this drink! Add some in the admin panel and refresh the page!
+            No prices found for this drink! Add some in the <a href="{{route('wallstreet::edit', ['id'=>$activeDrink->id])}}">admin panel</a> and refresh the page!
             </div>
         </div>
     @else

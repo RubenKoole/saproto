@@ -51,8 +51,9 @@ class WallstreetController extends Controller
         $drink->start_time = Carbon::parse($request->input('start_time'))->timestamp;
         $drink->end_time = Carbon::parse($request->input('end_time'))->timestamp;
         $drink->minimum_price = $request->input('minimum_price');
-        $drink->price_increase = $request->input('price_increase');
-        $drink->price_decrease = $request->input('price_decrease');
+        $drink->price_increase_percentage = $request->input('price_increase_percentage');
+        $drink->price_decrease_percentage = $request->input('price_increase_percentage');
+        $drink->max_price_percentage= $request->input('max_price_percentage');
         $drink->save();
 
         $allDrinks = WallstreetDrink::query()->orderby('start_time', 'desc')->get();
@@ -65,8 +66,9 @@ class WallstreetController extends Controller
         $drink->start_time = Carbon::parse($request->input('start_time'))->timestamp;
         $drink->end_time = Carbon::parse($request->input('end_time'))->timestamp;
         $drink->minimum_price = $request->input('minimum_price');
-        $drink->price_increase = $request->input('price_increase');
-        $drink->price_decrease = $request->input('price_decrease');
+        $drink->price_increase_percentage = $request->input('price_increase_percentage');
+        $drink->price_decrease_percentage = $request->input('price_decrease_percentage');
+        $drink->max_price_percentage= $request->input('max_price_percentage');
         $drink->save();
 
         $allDrinks = WallstreetDrink::query()->orderby('start_time', 'desc')->get();
@@ -89,6 +91,21 @@ class WallstreetController extends Controller
 
         Session::flash('flash_message', 'Wallstreet drink and its affiliated price history deleted.');
         return Redirect::to(route('wallstreet::admin'));
+    }
+
+    public function crash($id)
+    {
+        $drink = WallstreetDrink::findOrFail($id);
+        foreach ($drink->products()->get() as $product) {
+            $newPriceObject = new WallstreetPrice([
+                'wallstreet_drink_id' => $drink->id,
+                'product_id' => $product->id,
+                'price' =>$product->price,
+            ]);
+            $newPriceObject->save();
+        }
+        Session::flash('flash_message', 'Wallstreet market crashed!');
+        return Redirect::back();
     }
 
     public function close($id): RedirectResponse

@@ -26,10 +26,10 @@
 
                 <!-- Price decrease per Minute -->
                     <div class="col-md-12 mb-3">
-                        <label for="price_decrease">€ decrease per minute:</label>
-                        <input type="number" step="0.01" class="form-control" id="price_decrease" name="price_decrease"
-                               placeholder='0'
-                               value="{{ $currentDrink->price_decrease ?? ''}}"
+                        <label for="price_decrease_percentage">% decrease per minute:</label>
+                        <input type="number" min="0" max="100" step="0.1" class="form-control" id="price_decrease_percentage" name="price_decrease_percentage"
+                               placeholder='1'
+                               value="{{ $currentDrink->price_decrease_percentage ?? ''}}"
                                required
                         />
                     </div>
@@ -60,10 +60,20 @@
 
                     <!-- Regular Discount -->
                     <div class="col-md-12 mb-3">
-                        <label for="price_increase">€ increase per sold item:</label>
-                        <input type="number" step="0.01" class="form-control" id="price_increase" name="price_increase"
-                               placeholder='0'
-                               value="{{ $currentDrink->price_increase ?? ''}}"
+                        <label for="price_increase_percentage">% increase per sold item:</label>
+                        <input type="number" min="0" max="100" step="0.1" class="form-control" id="price_increase_percentage" name="price_increase_percentage"
+                               placeholder='2'
+                               value="{{ $currentDrink->price_increase_percentage ?? ''}}"
+                               required
+                        />
+                    </div>
+
+                    <!-- Regular Discount -->
+                    <div class="col-md-12 mb-3">
+                        <label for="max_price_percentage">max price %</label>
+                        <input type="number" step="1" min="100" class="form-control" id="max_price_percentage" name="max_price_percentage"
+                               placeholder='150'
+                               value="{{ $currentDrink->max_price_percentage ?? ''}}"
                                required
                         />
                     </div>
